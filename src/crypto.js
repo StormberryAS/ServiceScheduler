@@ -19,7 +19,7 @@
     const iterations = 600000;
     const key = await deriveKeyPBKDF2(password, salt, iterations);
     const ct = await subtle.encrypt({ name:'AES-GCM', iv }, key, enc.encode(JSON.stringify(payload)));
-    return { format:'stormberry-scheduler', version:1,
+    return { format:'service-scheduler', version:1,
       kdf:{ algo:'pbkdf2', hash:'SHA-256', iterations, saltB64:b64encode(salt) },
       cipher:'AES-256-GCM', ivB64:b64encode(iv), ciphertextB64:b64encode(ct) };
   };

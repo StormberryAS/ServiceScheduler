@@ -29,7 +29,7 @@ test('availabilityScore is signed: negative resting, 0 available, positive idle,
   assert.equal(availabilityScore(e, parseISO('2026-06-14')), -8);  // 8 rest days left
   assert.equal(availabilityScore(e, parseISO('2026-06-22')), 0);   // available today
   assert.equal(availabilityScore(e, parseISO('2026-06-30')), 8);   // idle 8 days
-  assert.equal(availabilityScore(eng(null), parseISO('2026-06-22')), 999); // no offshore history
+  assert.equal(availabilityScore(eng(null), parseISO('2026-06-22')), 0); // no offshore history
 });
 test('restMultiplier scales rest days and minRestDays provides a floor', () => {
   // Trip of 10 days with multiplier 1.5 -> Math.round(10 * 1.5) = 15 rest days.

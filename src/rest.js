@@ -22,7 +22,7 @@
   // positive = days available since rest completed. No offshore history = long-available (999).
   const availabilityScore = (e, refMs, settings = {}) => {
     const rc = restCompleteDate(e, settings);
-    if (rc == null) return 999;
+    if (rc == null) return 0;
     return SB.dates.daysBetween(rc, refMs);
   };
   SB.rest = { restDays, restCompleteDate, restDaysBank, availabilityScore };

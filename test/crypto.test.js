@@ -7,7 +7,7 @@ const payload = { meta:{ appVersion:1 }, engineers:[{ id:'e1', name:'Ada' }] };
 
 test('round-trip restores payload', async () => {
   const env = await encrypt(payload, 'correct horse battery staple');
-  assert.equal(env.format, 'stormberry-scheduler');
+  assert.equal(env.format, 'service-scheduler');
   assert.equal(env.kdf.algo, 'pbkdf2');
   const out = await decrypt(env, 'correct horse battery staple');
   assert.deepEqual(out, payload);

@@ -108,7 +108,7 @@ A text JSON envelope so it is portable and inspectable:
 
 ```
 {
-  "format": "stormberry-scheduler",
+  "format": "service-scheduler",
   "version": 1,
   "kdf": { "algo": "pbkdf2", "hash": "SHA-256", "iterations": 600000, "saltB64": "..." },
   "cipher": "AES-256-GCM",

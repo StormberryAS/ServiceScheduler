@@ -402,12 +402,14 @@
       const rdoVal = form.querySelector('#edit-rdo').value.trim();
       const restDaysOverride = rdoVal !== '' ? Number(rdoVal) : null;
 
-      const vacations = [...form.querySelectorAll('.edit-list')[5].children].map((row) => ({
+      const vacations = [...form.querySelectorAll('.edit-list')[4].children].map((row) => ({
         start: readDate(row.querySelector('.inp-vac-start')),
         end: readDate(row.querySelector('.inp-vac-end')),
       })).filter((v) => v.start || v.end);
 
+      const original = state.engineers.find((x) => x.id === id) || {};
       const updated = {
+        ...original,
         id,
         name: nameInput.value.trim() || 'Unnamed engineer',
         nationalities: nat,
@@ -594,7 +596,7 @@
         const row = document.createElement('p');
         row.className = 'cal-event-row';
         row.dataset.alertDate = a.alertDate;
-        row.textContent = `${SB.dates.toDisplay(a.alertDate)} - ${a.who} - ${a.kind} will expire ${SB.dates.toDisplay(a.realExpiry)}`;
+        row.textContent = `${SB.dates.toDisplay(a.alertDate)} - ${a.who} - ${a.detail} will expire ${SB.dates.toDisplay(a.realExpiry)}`;
         card.appendChild(row);
       });
     } else {

@@ -221,7 +221,7 @@ ul { margin:.3rem 0; padding-left:1.2rem; }
 }
 
 .footer-inner {
-  max-width: 680px;
+  max-width: 960px;
   margin: 0 auto 3rem;
   display: flex;
   flex-direction: row;
@@ -230,10 +230,12 @@ ul { margin:.3rem 0; padding-left:1.2rem; }
   flex-wrap: wrap;
   gap: 2rem;
 }
+.footer-brand { flex: 1 1 260px; min-width: 0; }
 
 .footer-powered {
+  flex: 1 1 260px;
+  min-width: 0;
   text-align: right;
-  margin-left: auto;
 }
 
 .footer-logo {
