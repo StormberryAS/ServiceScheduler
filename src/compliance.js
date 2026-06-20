@@ -16,8 +16,8 @@
     for (const k of ['d30','d60','d90']) b[k].sort((a, c) => a.days - c.days);
     return b;
   };
-  const restOverview = (engineers, asOfMs) =>
-    engineers.map((e) => ({ id:e.id, name:e.name, restDaysBank: SB.rest.restDaysBank(e, asOfMs) }))
-      .filter((x) => x.restDaysBank > 0).sort((a, b) => b.restDaysBank - a.restDaysBank);
-  SB.compliance = { expiringDocuments, restOverview };
+  const availabilityOverview = (engineers, asOfMs) =>
+    engineers.map((e) => ({ id:e.id, name:e.name, availability: SB.rest.availabilityScore(e, asOfMs) }))
+      .filter((x) => x.availability < 0).sort((a, b) => a.availability - b.availability);
+  SB.compliance = { expiringDocuments, availabilityOverview };
 })();

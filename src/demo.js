@@ -4,8 +4,9 @@
   const REPAIRS = ['preventive (scheduled) service','corrective (breakdown) repair','overhaul and recertification (including load test)'];
   const CERTS = ['offshore safety course','sea survival','H2S awareness','working at height','first aid'];
   const COUNTRIES = ['Norway','United Kingdom','Netherlands','Brazil','United Arab Emirates','Angola','Australia','Syria'];
+  const VISATYPES = ['Work (Service Supplier visa)','Work (residence permit)','Work visa','Business visitor','Norway temporary residency','Norway permanent residency'];
   const settings = () => ({ restRule:'equal-to-previous-trip', passportInvalidMonths:6, passportBufferMonths:12,
-    equipment:[...EQUIP], repairTypes:[...REPAIRS], certTypes:[...CERTS], countries:[...COUNTRIES] });
+    equipment:[...EQUIP], repairTypes:[...REPAIRS], certTypes:[...CERTS], countries:[...COUNTRIES], visaTypes:[...VISATYPES] });
 
   const allCerts = (expiry) => CERTS.map((type) => ({ type, expiry }));
   const comp = (equipment, repairType, level) => ({ equipment, repairType, level });

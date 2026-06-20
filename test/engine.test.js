@@ -24,6 +24,7 @@ test('rested engineers rank above resting ones, exclusions captured', () => {
   assert.deepEqual(r.shortlist.map((x) => x.id), ['rested', 'resting']);
   assert.equal(r.shortlist[0].overtime, false);
   assert.equal(r.shortlist[1].overtime, true);
-  assert.ok(r.shortlist[1].restDaysBank > 0);
+  assert.ok(r.shortlist[0].availability >= 0);
+  assert.ok(r.shortlist[1].availability < 0);
   assert.deepEqual(r.excluded, [{ id:'noskill', name:'noskill', failedRule:'no-competence' }]);
 });

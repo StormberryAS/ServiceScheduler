@@ -4,7 +4,7 @@ import '../src/dates.js';
 import '../src/rest.js';
 import '../src/compliance.js';
 const { parseISO } = globalThis.SB.dates;
-const { expiringDocuments, restOverview } = globalThis.SB.compliance;
+const { expiringDocuments, availabilityOverview } = globalThis.SB.compliance;
 
 const asOf = parseISO('2026-06-22');
 const eng = {
@@ -20,8 +20,8 @@ test('documents bucket by 30/60/90 days', () => {
   assert.equal(b.d60[0].kind, 'Visa');
   assert.equal(b.d90[0].kind, 'Certificate');
 });
-test('rest overview lists only resting engineers', () => {
-  const r = restOverview([eng], asOf);
+test('availability overview lists only resting engineers (negative availability)', () => {
+  const r = availabilityOverview([eng], asOf);
   assert.equal(r.length, 1);
-  assert.ok(r[0].restDaysBank > 0);
+  assert.ok(r[0].availability < 0);
 });
