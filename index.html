@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stormberry Scheduler</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><h1>Stormberry Scheduler</h1><span id="fileState" class="muted">No roster loaded</span></header>
+
+  <section id="lock" class="card">
+    <h2>Open a roster</h2>
+    <p class="muted">Everything stays on this device. Nothing is uploaded.</p>
+    <input type="file" id="fileInput" accept=".sbs">
+    <label>Password <input type="password" id="pw" autocomplete="off"></label>
+    <div id="meter" class="meter"></div>
+    <div class="row">
+      <button id="unlockBtn">Unlock file</button>
+      <button id="newBtn">New roster (demo data)</button>
+    </div>
+    <p id="lockError" class="error" hidden></p>
+  </section>
+
+  <nav id="tabs" hidden>
+    <button data-tab="roster" class="active">Roster</button>
+    <button data-tab="nextpick">Find next pick</button>
+    <button data-tab="compliance">Compliance</button>
+    <span class="spacer"></span>
+    <button id="saveBtn">Save</button>
+  </nav>
+
+  <main id="roster" class="tab" hidden></main>
+  <main id="nextpick" class="tab" hidden></main>
+  <main id="compliance" class="tab" hidden></main>
+
+  <script src="src/dates.js"></script>
+  <script src="src/rest.js"></script>
+  <script src="src/eligibility.js"></script>
+  <script src="src/engine.js"></script>
+  <script src="src/strength.js"></script>
+  <script src="vendor/hash-wasm-argon2.js"></script>
+  <script src="src/crypto-argon2.js"></script>
+  <script src="src/crypto.js"></script>
+  <script src="src/compliance.js"></script>
+  <script src="src/demo.js"></script>
+  <script src="src/ui.js"></script>
+</body>
+</html>
