@@ -39,6 +39,8 @@ a { color:#2f6fd0; }
 .pill { font-size:.75rem; padding:.12rem .55rem; border-radius:999px; display:inline-block; }
 .pill.ot { background:#fbeede; color:#8a5a12; } .pill.ok { background:#e3f5ea; color:#1f7a45; }
 .excluded td { color:var(--muted); }
+.warn { background:#fbeede; color:#8a5a12; padding:.5rem .75rem; border-radius:8px; border:1px solid #f0d9b0; margin:.6rem 0; }
+.ok-note { color:#1f7a45; font-weight:600; margin:.4rem 0; }
 ul { margin:.3rem 0; padding-left:1.2rem; }
 .save-panel { max-width:480px; margin:1rem auto; }
 .edit-section { margin:1rem 0; }
