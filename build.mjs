@@ -24,6 +24,7 @@ html = html.replace('</body>', `  <script>\n${scripts}\n  </script>\n</body>`);
 await mkdir(new URL('dist/', root), { recursive: true });
 await writeFile(new URL('dist/index.html', root), html);
 await writeFile(new URL('dist/_headers', root), await read('_headers'));
+await writeFile(new URL('dist/favicon.svg', root), await read('favicon.svg'));
 
 // guard: code must be inlined (no external <script src> or stylesheet <link>). External
 // images and anchor links are allowed (e.g. the Stormberry app-switcher carousel and footer links).

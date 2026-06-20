@@ -8,7 +8,7 @@ Working name: Stormberry Scheduler (repo folder `ServiceScheduler`, subdomain `s
 
 A local-first, zero-knowledge scheduling tool for offshore field-service teams. It answers one operational question: given a job that needs a specific piece of equipment repaired in a specific country on a specific date, who is the right engineer to send, accounting for skills, travel documents, safety certificates, vacation, and mandatory rest after offshore work.
 
-Purpose: a vendor-neutral example of Stormberry's "functioning prototype to start an idea" approach, and of privacy-by-design done properly. The equipment taxonomy is generic on purpose so the demo doubles as a portfolio piece, and it demonstrates the Service Execution Manager domain end to end: workforce scheduling, certificate compliance, dispatch logic, and the cost of disturbing mandatory rest.
+Purpose: a vendor-neutral example of Stormberry's "functioning prototype to start an idea" approach, and of privacy-by-design done properly. The equipment taxonomy is generic on purpose so the demo doubles as a portfolio piece, and it demonstrates the Service Manager domain end to end: workforce scheduling, certificate compliance, dispatch logic, and the cost of disturbing mandatory rest.
 
 ## 2. Goals and success criteria
 
