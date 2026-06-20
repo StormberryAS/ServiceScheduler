@@ -1,4 +1,4 @@
-# Stormberry Scheduler v1 Implementation Plan
+# ServiceScheduler v1 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -23,7 +23,7 @@ These apply to every task. Values copied verbatim from the spec (`docs/2026-06-2
 - **Password:** no minimum, empty allowed; live five-state meter (unprotected / weak / medium / strong / super-strong).
 - **Dates:** ISO `YYYY-MM-DD`, treated as UTC-midnight calendar dates; represented internally as epoch milliseconds for arithmetic.
 - **Module convention:** each `src/*.js` is an IIFE that assigns to `globalThis.SB.<namespace>` and references other namespaces as `SB.<ns>.<fn>` at call time (never destructured at load), so load order never breaks.
-- **Repo:** `ServiceScheduler`; subdomain `scheduler.stormberry.as`; product name "Stormberry Scheduler".
+- **Repo:** `ServiceScheduler`; subdomain `scheduler.stormberry.as`; product name "ServiceScheduler".
 
 ## Data shapes (used across all tasks)
 
@@ -917,11 +917,11 @@ This task's deliverable is verified by browser observation, not unit tests. Keep
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stormberry Scheduler</title>
+  <title>ServiceScheduler</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header><h1>Stormberry Scheduler</h1><span id="fileState" class="muted">No roster loaded</span></header>
+  <header><h1>ServiceScheduler</h1><span id="fileState" class="muted">No roster loaded</span></header>
 
   <section id="lock" class="card">
     <h2>Open a roster</h2>

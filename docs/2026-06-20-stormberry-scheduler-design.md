@@ -1,8 +1,8 @@
-# Stormberry Scheduler, design spec
+# ServiceScheduler, design spec
 
 Date: 2026-06-20
 Status: draft for review (revised after first review pass)
-Working name: Stormberry Scheduler (repo folder `ServiceScheduler`, subdomain `scheduler.stormberry.as`).
+Working name: ServiceScheduler (repo folder `ServiceScheduler`, subdomain `scheduler.stormberry.as`).
 
 ## 1. Purpose
 
@@ -214,7 +214,7 @@ Passport information only, no scans. No real people.
 - Equipment taxonomy: generic offshore, vendor-neutral, so it doubles as a Stormberry showcase. (Marcos, 2026-06-20)
 - Run mode for Monday: live at `scheduler.stormberry.as` plus fully offline. (Marcos, 2026-06-20)
 - Language: British English everywhere. (Marcos, 2026-06-20)
-- Repo folder: `ServiceScheduler`; product name stays "Stormberry Scheduler". (Marcos, 2026-06-20)
+- Repo folder: `ServiceScheduler`; product name stays "ServiceScheduler". (Marcos, 2026-06-20)
 - Availability includes vacation. (Marcos, 2026-06-20)
 - Rest default equals previous trip length; expose a RestDaysBank; rest is a cost signal (overtime), not a hard block. (Marcos, 2026-06-20)
 - Passport thresholds: `passportInvalidMonths` 6 (hard), `passportBufferMonths` 12 (warning). (Marcos, 2026-06-20)
