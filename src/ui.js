@@ -42,11 +42,12 @@
     b.addEventListener('click', () => showTab(b.dataset.tab)));
   function showTab(name) {
     document.querySelectorAll('#tabs button[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
-    for (const t of ['roster','nextpick','compliance','settings']) $(t).hidden = (t !== name);
+    for (const t of ['roster','nextpick','compliance','settings','schedule']) $(t).hidden = (t !== name);
     if (name === 'roster') SB.ui.renderRoster();
     if (name === 'nextpick') SB.ui.renderNextPick();
     if (name === 'compliance') SB.ui.renderCompliance();
     if (name === 'settings') SB.ui.renderSettings();
+    if (name === 'schedule') SB.ui.renderSchedule();
   }
 
   const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
@@ -68,9 +69,9 @@
   function renderRoster() {
     const todayMs = today();
     const sorted = [...state.engineers].sort((a, b) =>
-      SB.rest.availabilityScore(b, todayMs) - SB.rest.availabilityScore(a, todayMs));
+      SB.rest.availabilityScore(b, todayMs, state.settings) - SB.rest.availabilityScore(a, todayMs, state.settings));
     const rows = sorted.map((e) => {
-      const av = SB.rest.availabilityScore(e, todayMs);
+      const av = SB.rest.availabilityScore(e, todayMs, state.settings);
       let avPill;
       if (av < 0) {
         avPill = `<span class="pill ot">${-av} rest days left</span>`;
@@ -103,7 +104,7 @@
   function renderEngineerDetail(id) {
     const e = state.engineers.find((x) => x.id === id); if (!e) return;
     const list = (arr, fn) => arr.map(fn).join('') || '<li class="muted">none</li>';
-    const av = SB.rest.availabilityScore(e, today());
+    const av = SB.rest.availabilityScore(e, today(), state.settings);
     const avDisplay = av >= 900 ? 'Available' : String(av);
     const detailEl = $('detail');
     detailEl.innerHTML = `<div class="card"><h3>${esc(e.name)}</h3>
@@ -113,6 +114,11 @@
       <p><strong>Certificates:</strong><ul>${list(e.certs, (c) => `<li>${esc(c.type)}, expires ${esc(SB.dates.toDisplay(c.expiry))}</li>`)}</ul></p>
       <p><strong>Competence:</strong><ul>${list(e.competence, (c) => `<li>${esc(c.equipment)} / ${esc(c.repairType)} (level ${c.level})</li>`)}</ul></p>
       <p><strong>Availability score:</strong> ${esc(avDisplay)}</p>
+      <p><strong>Assignments:</strong> ${
+        (e.assignments && e.assignments.length)
+          ? e.assignments.map((a) => `${esc(a.jobTitle)}, ${esc(a.country)}, ${esc(SB.dates.toDisplay(a.start))} to ${esc(SB.dates.toDisplay(a.end))}`).join('<br>')
+          : 'none'
+      }</p>
       <button data-edit-id="${esc(e.id)}">Edit</button></div>`;
     detailEl.querySelector('button[data-edit-id]').addEventListener('click', () => {
       renderEngineerEditForm(id);
@@ -625,12 +631,14 @@
     const certChecks = s.certTypes.map((c) => `<label class="inline"><input type="checkbox" value="${esc(c)}" ${c==='offshore safety course'?'checked':''}> ${esc(c)}</label>`).join(' ');
     $('nextpick').innerHTML = `<h2>Find next pick</h2>
       <div class="card">
+        <label>Job title <input type="text" id="j_title" placeholder="Optional label"></label>
         <label>Equipment <select id="j_eq">${opts(s.equipment)}</select></label>
         <label>Repair type <select id="j_rep">${opts(s.repairTypes)}</select></label>
         <label>Destination country <select id="j_country">${opts(SB.countries)}</select></label>
         <label class="inline"><input type="checkbox" id="j_off" checked> Offshore</label>
         <label>Start date <input type="date" id="j_start" value="2026-08-01"></label>
         <label>Duration (days) <input type="number" id="j_dur" value="10" min="1"></label>
+        <label>Team size <select id="j_team"><option value="1" selected>1</option><option value="2">2</option></select></label>
         <div>Required certificates:<br>${certChecks}</div>
         <button id="runPick">Find engineers</button>
       </div>
@@ -639,27 +647,77 @@
   }
 
   function runPick() {
+    const titleVal = $('j_title').value.trim();
+    const equipment = $('j_eq').value;
+    const repairType = $('j_rep').value;
     const job = {
-      title: 'Ad hoc job', equipment: $('j_eq').value, repairType: $('j_rep').value,
+      equipment, repairType,
       country: $('j_country').value, offshore: $('j_off').checked,
       startDate: $('j_start').value, durationDays: Number($('j_dur').value),
       requiredCerts: [...document.querySelectorAll('#nextpick input[type=checkbox]:checked')].filter((c) => c.value).map((c) => c.value),
     };
+    const teamSize = Number($('j_team').value) || 1;
     const r = SB.engine.nextPick(job, state.engineers, state.settings);
-    const shortlist = r.shortlist.length
-      ? `<table><thead><tr><th>Rank</th><th>Name</th><th>Status</th><th>Reason</th></tr></thead><tbody>` +
-        r.shortlist.map((x, i) => {
-          const pill = x.overtime
-            ? '<span class="pill ot">overtime</span>'
-            : '<span class="pill ok">available</span>';
-          return `<tr><td>${i+1}</td><td>${esc(x.name)}</td><td>${pill}</td><td>${esc(x.reason)}</td></tr>`;
-        }).join('') + `</tbody></table>`
-      : `<p class="muted">No eligible engineers for this job.</p>`;
-    const RULE = { 'no-competence':'no matching competence', 'no-valid-passport':'passport invalid within 6 months', 'needs-visa':'no valid visa for destination', 'cert-missing-or-expired':'required certificate missing or expired', 'on-vacation':'on vacation during the job' };
+    const jobEndISO = SB.dates.formatISO(SB.eligibility.jobEndMs(job));
+
+    const RULE = {
+      'no-competence': 'no matching competence',
+      'no-valid-passport': 'passport invalid within 6 months',
+      'needs-visa': 'no valid visa for destination',
+      'cert-missing-or-expired': 'required certificate missing or expired',
+      'on-vacation': 'on vacation during the job',
+      'double-booked': 'already booked on an overlapping job',
+    };
+
+    let html = '';
+
+    // max-consecutive warning
+    if (job.durationDays > state.settings.maxConsecutiveDays) {
+      html += `<p class="warn">Warning: ${esc(String(job.durationDays))} days exceeds the maximum consecutive offshore days (${esc(String(state.settings.maxConsecutiveDays))}).</p>`;
+    }
+
+    // recommended team line
+    if (teamSize === 2 && r.shortlist.length >= 2) {
+      html += `<p><strong>Recommended team:</strong> Lead: ${esc(r.shortlist[0].name)} | Assistant: ${esc(r.shortlist[1].name)}</p>`;
+    }
+
+    html += '<h3>Shortlist</h3>';
+    if (r.shortlist.length) {
+      html += `<table><thead><tr><th>Rank</th><th>Name</th><th>Level</th><th>Status</th><th>Reason</th><th></th></tr></thead><tbody>`;
+      r.shortlist.forEach((x, i) => {
+        const pill = x.overtime
+          ? '<span class="pill ot">overtime</span>'
+          : '<span class="pill ok">available</span>';
+        html += `<tr><td>${i + 1}</td><td>${esc(x.name)}</td><td>${esc(String(x.level !== undefined ? x.level : ''))}</td><td>${pill}</td><td>${esc(x.reason)}</td><td><button class="assign-btn" data-eng-id="${esc(String(x.id))}">Assign</button></td></tr>`;
+      });
+      html += '</tbody></table>';
+    } else {
+      html += '<p class="muted">No eligible engineers for this job.</p>';
+    }
+
     const excluded = r.excluded.length
-      ? `<h3>Excluded</h3><table class="excluded"><tbody>` + r.excluded.map((x) => `<tr><td>${esc(x.name)}</td><td>${esc(RULE[x.failedRule]||x.failedRule)}</td></tr>`).join('') + `</tbody></table>`
+      ? `<h3>Excluded</h3><table class="excluded"><tbody>` + r.excluded.map((x) => `<tr><td>${esc(x.name)}</td><td>${esc(RULE[x.failedRule] || x.failedRule)}</td></tr>`).join('') + '</tbody></table>'
       : '';
-    $('pickResult').innerHTML = `<h3>Shortlist</h3>${shortlist}${excluded}`;
+
+    $('pickResult').innerHTML = html + excluded;
+
+    // wire Assign buttons
+    $('pickResult').querySelectorAll('.assign-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const engId = btn.dataset.engId;
+        const eng = state.engineers.find((e) => String(e.id) === engId);
+        if (!eng) return;
+        if (!eng.assignments) eng.assignments = [];
+        const assignTitle = titleVal || `${equipment}, ${repairType}`;
+        eng.assignments.push({ jobTitle: assignTitle, country: job.country, start: job.startDate, end: jobEndISO });
+        markDirty();
+        const confirmation = document.createElement('p');
+        confirmation.className = 'ok-note';
+        confirmation.textContent = `Assigned ${eng.name}`;
+        $('pickResult').prepend(confirmation);
+        runPick();
+      });
+    });
   }
 
   // ---- Settings tab ----
@@ -668,6 +726,92 @@
     const el = $('settings');
     el.innerHTML = '<h2>Settings</h2>';
 
+    // ---- Rotation rules ----
+    const rotSection = document.createElement('div');
+    rotSection.className = 'edit-section';
+    const rotHeading = document.createElement('h3');
+    rotHeading.textContent = 'Rotation rules';
+    rotSection.appendChild(rotHeading);
+
+    function numberSettingRow(labelText, key, min, step) {
+      const row = document.createElement('p');
+      const lbl = document.createElement('label');
+      lbl.textContent = labelText + ' ';
+      const inp = document.createElement('input');
+      inp.type = 'number';
+      inp.value = String(s[key] !== undefined ? s[key] : '');
+      inp.min = String(min);
+      if (step !== undefined) inp.step = String(step);
+      inp.addEventListener('change', () => {
+        const v = parseFloat(inp.value);
+        if (!isNaN(v)) { s[key] = v; markDirty(); }
+      });
+      inp.addEventListener('input', () => {
+        const v = parseFloat(inp.value);
+        if (!isNaN(v)) { s[key] = v; markDirty(); }
+      });
+      lbl.appendChild(inp);
+      row.appendChild(lbl);
+      return row;
+    }
+
+    rotSection.appendChild(numberSettingRow('Rest multiplier', 'restMultiplier', 0, 0.1));
+    rotSection.appendChild(numberSettingRow('Minimum rest days', 'minRestDays', 0, 1));
+    rotSection.appendChild(numberSettingRow('Max consecutive offshore days', 'maxConsecutiveDays', 1, 1));
+    el.appendChild(rotSection);
+
+    // ---- Offshore-required certificates ----
+    const offSection = document.createElement('div');
+    offSection.className = 'edit-section';
+    const offHeading = document.createElement('h3');
+    offHeading.textContent = 'Offshore-required certificates';
+    offSection.appendChild(offHeading);
+
+    const offList = document.createElement('div');
+    offList.className = 'edit-list';
+    (s.offshoreRequiredCerts || []).forEach((cert) => {
+      const row = document.createElement('div');
+      row.className = 'edit-row';
+      const span = document.createElement('span');
+      span.textContent = cert;
+      const rb = document.createElement('button');
+      rb.type = 'button'; rb.textContent = 'Remove'; rb.className = 'btn-remove';
+      rb.addEventListener('click', () => {
+        s.offshoreRequiredCerts = (s.offshoreRequiredCerts || []).filter((x) => x !== cert);
+        markDirty();
+        renderSettings();
+      });
+      row.appendChild(span);
+      row.appendChild(rb);
+      offList.appendChild(row);
+    });
+    offSection.appendChild(offList);
+
+    const addOffRow = document.createElement('div');
+    addOffRow.className = 'edit-row';
+    const offSel = document.createElement('select');
+    (s.certTypes || []).forEach((c) => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      offSel.appendChild(opt);
+    });
+    const addOffBtn = document.createElement('button');
+    addOffBtn.type = 'button'; addOffBtn.textContent = 'Add';
+    addOffBtn.addEventListener('click', () => {
+      const val = offSel.value;
+      if (!val) return;
+      if (!s.offshoreRequiredCerts) s.offshoreRequiredCerts = [];
+      if (s.offshoreRequiredCerts.includes(val)) return;
+      s.offshoreRequiredCerts.push(val);
+      markDirty();
+      renderSettings();
+    });
+    addOffRow.appendChild(offSel);
+    addOffRow.appendChild(addOffBtn);
+    offSection.appendChild(addOffRow);
+    el.appendChild(offSection);
+
+    // ---- Standard editable lists ----
     const lists = [
       { key: 'equipment', label: 'Equipment' },
       { key: 'repairTypes', label: 'Repair types' },
@@ -723,6 +867,60 @@
 
       el.appendChild(section);
     });
+  }
+
+  // ---- Schedule tab ----
+  function renderSchedule() {
+    const el = $('schedule');
+    el.innerHTML = '';
+
+    const h2 = document.createElement('h2');
+    h2.textContent = 'Schedule';
+    el.appendChild(h2);
+
+    // gather all assignments across all engineers
+    const rows = [];
+    for (const eng of state.engineers) {
+      for (const a of (eng.assignments || [])) {
+        rows.push({ engineerId: eng.id, engineerName: eng.name, jobTitle: a.jobTitle, country: a.country, start: a.start, end: a.end });
+      }
+    }
+    rows.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
+
+    if (rows.length === 0) {
+      const p = document.createElement('p');
+      p.className = 'muted';
+      p.textContent = 'No assignments yet.';
+      el.appendChild(p);
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.innerHTML = '<thead><tr><th>Engineer</th><th>Job</th><th>Country</th><th>From</th><th>To</th><th></th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    rows.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${esc(row.engineerName)}</td><td>${esc(row.jobTitle)}</td><td>${esc(row.country)}</td><td>${esc(SB.dates.toDisplay(row.start))}</td><td>${esc(SB.dates.toDisplay(row.end))}</td>`;
+      const td = document.createElement('td');
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.textContent = 'Remove';
+      removeBtn.className = 'btn-remove';
+      removeBtn.addEventListener('click', () => {
+        const eng = state.engineers.find((e) => e.id === row.engineerId);
+        if (!eng) return;
+        eng.assignments = (eng.assignments || []).filter(
+          (a) => !(a.jobTitle === row.jobTitle && a.country === row.country && a.start === row.start && a.end === row.end)
+        );
+        markDirty();
+        renderSchedule();
+      });
+      td.appendChild(removeBtn);
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    el.appendChild(table);
   }
 
   // ---- Save with password prompt ----
@@ -810,7 +1008,7 @@
     state.engineers = []; state.settings = null; state.password = '';
     state.dirty = false; $('fileState').textContent = 'No roster loaded';
     $('tabs').hidden = true;
-    for (const t of ['roster','nextpick','compliance','settings']) $(t).hidden = true;
+    for (const t of ['roster','nextpick','compliance','settings','schedule']) $(t).hidden = true;
     const panel = $('savePanel');
     if (panel) panel.hidden = true;
     // reset lock screen inputs
@@ -821,5 +1019,5 @@
     $('lock').hidden = false;
   });
 
-  SB.ui = { state, calState, markDirty, markClean, showTab, renderRoster, renderEngineerDetail, renderCompliance, renderNextPick, renderSettings };
+  SB.ui = { state, calState, markDirty, markClean, showTab, renderRoster, renderEngineerDetail, renderCompliance, renderNextPick, renderSettings, renderSchedule };
 })();
