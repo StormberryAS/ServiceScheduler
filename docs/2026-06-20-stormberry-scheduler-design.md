@@ -33,7 +33,7 @@ Purpose: a vendor-neutral example of Stormberry's "functioning prototype to star
 **Adversaries considered:**
 - An honest-but-curious or compromised host (Stormberry, Cloudflare). The server only ever serves static code; it never receives the data file or the password. There is nothing on the server to steal.
 - A network eavesdropper. No data is transmitted at any point. TLS protects the delivery of the code itself.
-- A thief who obtains the encrypted file. They face Argon2id plus AES-256-GCM; security then reduces to the strength of the operator's password.
+- A thief who obtains the encrypted file. They face PBKDF2-SHA256 (600,000 iterations) plus AES-256-GCM; security then reduces to the strength of the operator's password.
 
 **Guarantees:**
 - Zero-knowledge: decryption, all editing, the scheduling logic, and re-encryption happen entirely in the browser. Ciphertext is produced client-side and saved to the operator's disk; it is never uploaded.
@@ -54,7 +54,7 @@ Purpose: a vendor-neutral example of Stormberry's "functioning prototype to star
 
 ## 5. Architecture
 
-A **single self-contained static HTML application**. Inline CSS and JavaScript, with the Argon2 WASM and fonts embedded (base64) so that after the initial page load there are zero further network requests of any kind. Consequences:
+A **single self-contained static HTML application**. The CSS and JavaScript are inlined, so the app loads no external code. After load it makes no data requests and works fully offline; the only optional external fetches are the sibling-app favicon images in the footer carousel. Consequences:
 
 - It runs by simply opening the file. Offline operation is the default, not a feature bolted on.
 - It is trivially auditable: one file, no build artefacts to reason about, no bundler opacity.
@@ -110,7 +110,7 @@ A text JSON envelope so it is portable and inspectable:
 {
   "format": "stormberry-scheduler",
   "version": 1,
-  "kdf": { "algo": "argon2id", "memKiB": 65536, "iterations": 3, "parallelism": 1, "saltB64": "..." },
+  "kdf": { "algo": "pbkdf2", "hash": "SHA-256", "iterations": 600000, "saltB64": "..." },
   "cipher": "AES-256-GCM",
   "ivB64": "...",
   "ciphertextB64": "..."
@@ -118,7 +118,7 @@ A text JSON envelope so it is portable and inspectable:
 ```
 
 - `ciphertextB64` is AES-256-GCM over the (optionally gzip-compressed) JSON payload. GCM tag appended.
-- Key derivation: Argon2id with the parameters in the header (memory 64 MiB, 3 iterations, parallelism 1, 32-byte key), 16-byte random salt. Fallback: PBKDF2-SHA256 at 600,000 iterations if the Argon2 WASM is unavailable; the header records which KDF was used so old files still open. An empty password runs the same derivation (offering no real protection, by design).
+- Key derivation: PBKDF2-SHA256 at 600,000 iterations with a 16-byte random salt, deriving a 256-bit AES-GCM key. An empty password runs the same derivation (offering no real protection, by design).
 - AES-GCM: 12-byte random IV, 128-bit tag, native WebCrypto.
 - Compression: native `CompressionStream` (gzip) when available; skipped otherwise (payload is text and small).
 - Save produces a fresh dated file: `scheduler-roster-YYYY-MM-DD.sbs`. Each save is a new version; the operator keeps whatever history they want.
@@ -171,7 +171,7 @@ Visual language reuses the Stormberry design system already used by the other de
 ## 10. Tech stack and dependencies
 
 - Vanilla HTML, CSS, JavaScript. No framework, no build step for v1. Rationale: trivial offline operation, full auditability, nothing to break before Monday.
-- Crypto: native WebCrypto (AES-256-GCM, PBKDF2 fallback) plus a vendored Argon2id WASM (hash-wasm), embedded in the page. No CDN.
+- Crypto: native WebCrypto only (AES-256-GCM with PBKDF2-SHA256 key derivation). No WebAssembly, no CDN. (Argon2id was originally planned but removed because the deployment CSP blocks WebAssembly.)
 - Everything inlined into one self-contained `index.html` for the zero-post-load-request property.
 - Strict CSP (`default-src 'self'`, no external origins; ideally `connect-src 'none'`).
 

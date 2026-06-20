@@ -4,7 +4,7 @@
 }
 * { box-sizing: border-box; }
 body { margin:0; font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); }
-header { display:flex; align-items:baseline; gap:1rem; padding:1rem 1.5rem; background:var(--panel); border-bottom:1px solid var(--line); }
+/* The page header is the hero, styled under .site-header in the chrome section below. */
 h1 { font-size:1.2rem; margin:0; letter-spacing:.01em; }
 h1::before { content:""; display:inline-block; width:.6rem; height:.6rem; border-radius:50%; background:var(--accent); margin-right:.5rem; vertical-align:middle; }
 .muted { color:var(--muted); } .error { color:var(--accent); }
@@ -231,6 +231,7 @@ ul { margin:.3rem 0; padding-left:1.2rem; }
 
 .footer-powered {
   text-align: right;
+  margin-left: auto;
 }
 
 .footer-logo {

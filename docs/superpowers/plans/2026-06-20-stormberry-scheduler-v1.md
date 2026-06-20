@@ -6,7 +6,7 @@
 
 **Architecture:** Pure scheduling/crypto logic lives in small browser-and-Node-compatible files that attach functions to a `globalThis.SB` namespace (classic-script IIFEs, also importable by Node for tests). The DOM layer wires those functions to three tabs. A trivial inliner concatenates everything into one self-contained `index.html` for deployment. No framework, no bundler, no transpiler.
 
-**Tech Stack:** Vanilla HTML/CSS/JS; Web Crypto (AES-256-GCM, PBKDF2-SHA256); Argon2id via vendored hash-wasm (enhancement); Node 20+ built-in test runner (`node --test`); Cloudflare Pages hosting.
+**Tech Stack:** Vanilla HTML/CSS/JS; Web Crypto (AES-256-GCM, PBKDF2-SHA256); Node 20+ built-in test runner (`node --test`); Cloudflare Pages hosting. (Note: Argon2id, planned as an enhancement in Task 12 below, was removed after build in favour of PBKDF2-only because the deployment CSP blocks WebAssembly. The shipped app uses PBKDF2-SHA256 + AES-256-GCM.)
 
 ## Global Constraints
 
