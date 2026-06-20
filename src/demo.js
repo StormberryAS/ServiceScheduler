@@ -45,6 +45,13 @@
     { type: 'first aid', expiry },
   ];
   const comp = (equipment, repairType, level) => ({ equipment, repairType, level });
+  // Expand each engineer to cover every equipment x repair-type combination so no job is
+  // uncoverable: listed specialties keep their level, every other combination is added at level 1.
+  const broadComp = (specialties) => {
+    const lvl = {};
+    specialties.forEach((c) => { lvl[c.equipment + '|' + c.repairType] = c.level; });
+    return EQUIP.flatMap((eq) => REPAIRS.map((rep) => comp(eq, rep, lvl[eq + '|' + rep] || 1)));
+  };
 
   // Two double-booked engineers: overlapping the default crane job (2026-08-01, 10 days).
   const doubleBookAssignment = { jobTitle: 'Crane overhaul', country: 'United Kingdom', start: '2026-07-28', end: '2026-08-10' };
@@ -139,6 +146,6 @@
       competence:[comp('offshore crane','preventive (scheduled) service',1), comp('lifeboat/davit system','corrective (breakdown) repair',2)],
       availability:{ lastOffshore:null, restDaysOverride:null, vacations:[] },
       assignments: [] },
-  ]);
+  ].map((e) => ({ ...e, competence: broadComp(e.competence) })));
   SB.demo = { settings, engineers };
 })();

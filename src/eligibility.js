@@ -17,14 +17,12 @@
     const visa = e.visas.find((v) => v.country === job.country && D().parseISO(v.expiry) >= end);
     return visa ? { ok: true } : { ok: false, rule: 'needs-visa' };
   };
-  const certsOk = (e, job, settings) => {
+  const certsOk = (e, job) => {
     const end = jobEndMs(job);
-    // Offshore jobs require all job.requiredCerts plus every cert in settings.offshoreRequiredCerts.
-    const offshoreRequired = settings.offshoreRequiredCerts || ['offshore safety course'];
-    const required = job.offshore
-      ? [...new Set([...job.requiredCerts, ...offshoreRequired])]
-      : job.requiredCerts;
-    return required.every((t) => e.certs.some((c) => c.type === t && D().parseISO(c.expiry) >= end));
+    // Required certificates are exactly what the job asks for. The next-pick form pre-ticks the
+    // offshore certs (settings.offshoreRequiredCerts) as sensible, removable defaults, so an empty
+    // list deliberately means no certificate filter.
+    return job.requiredCerts.every((t) => e.certs.some((c) => c.type === t && D().parseISO(c.expiry) >= end));
   };
   const onVacation = (e, job) => {
     const s = D().parseISO(job.startDate), end = jobEndMs(job);
@@ -47,7 +45,7 @@
     if (!hasCompetence(e, job)) return { eligible: false, failedRule: 'no-competence', passportWarning: false };
     const t = travel(e, job, settings);
     if (!t.ok) return { eligible: false, failedRule: t.rule, passportWarning: false };
-    if (!certsOk(e, job, settings)) return { eligible: false, failedRule: 'cert-missing-or-expired', passportWarning: false };
+    if (!certsOk(e, job)) return { eligible: false, failedRule: 'cert-missing-or-expired', passportWarning: false };
     if (onVacation(e, job)) return { eligible: false, failedRule: 'on-vacation', passportWarning: false };
     if (isDoubleBooked(e, job)) return { eligible: false, failedRule: 'double-booked', passportWarning: false };
     return { eligible: true, failedRule: null, passportWarning: passportWarning(e, job, settings) };

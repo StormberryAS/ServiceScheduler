@@ -51,29 +51,22 @@ test('passport warning when valid but inside 12-month buffer', () => {
   const r = evaluate(e, baseJob, settings);
   assert.equal(r.eligible, true); assert.equal(r.passportWarning, true);
 });
-test('offshore job without explicit offshore safety course cert fails', () => {
-  const job = { ...baseJob, offshore: true, requiredCerts: [] };
-  const e = baseEng(); e.certs = []; // no offshore safety course
-  assert.deepEqual(evaluate(e, job, settings), { eligible: false, failedRule: 'cert-missing-or-expired', passportWarning: false });
+test('a job enforces exactly its requiredCerts; empty means no filter', () => {
+  // empty requiredCerts on an offshore job -> no certificate filter
+  const offshoreNoCerts = { ...baseJob, offshore: true, requiredCerts: [] };
+  const e1 = baseEng(); e1.certs = [];
+  assert.equal(evaluate(e1, offshoreNoCerts, settings).eligible, true);
+  // a listed required cert that is missing -> excluded
+  const jobNeedsMedical = { ...baseJob, requiredCerts: ['offshore medical certificate'] };
+  assert.equal(evaluate(baseEng(), jobNeedsMedical, settings).failedRule, 'cert-missing-or-expired');
+  // adding the required cert -> eligible
+  const e3 = baseEng(); e3.certs = [{ type: 'offshore medical certificate', expiry: '2027-01-01' }];
+  assert.equal(evaluate(e3, jobNeedsMedical, settings).eligible, true);
 });
 test('onshore job without offshore safety course cert passes', () => {
   const job = { ...baseJob, offshore: false, country: 'Norway', requiredCerts: [] };
   const e = baseEng(); e.certs = []; // no offshore safety course, not required onshore
   assert.deepEqual(evaluate(e, job, settings), { eligible: true, failedRule: null, passportWarning: false });
-});
-test('offshore job requires offshore medical certificate when listed in settings.offshoreRequiredCerts', () => {
-  const settingsWithMedical = { ...settings, offshoreRequiredCerts: ['offshore safety course', 'offshore medical certificate'] };
-  const job = { ...baseJob, offshore: true, requiredCerts: [] };
-  // Engineer holds the safety course but NOT the medical cert.
-  const e = baseEng();
-  e.certs = [{ type: 'offshore safety course', expiry: '2027-01-01' }];
-  assert.deepEqual(evaluate(e, job, settingsWithMedical), { eligible: false, failedRule: 'cert-missing-or-expired', passportWarning: false });
-  // Adding the medical cert makes them eligible.
-  e.certs = [
-    { type: 'offshore safety course', expiry: '2027-01-01' },
-    { type: 'offshore medical certificate', expiry: '2027-01-01' },
-  ];
-  assert.deepEqual(evaluate(e, job, settingsWithMedical), { eligible: true, failedRule: null, passportWarning: false });
 });
 test('overlapping assignment yields double-booked failedRule', () => {
   const e = baseEng();

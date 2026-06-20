@@ -630,7 +630,7 @@
   function renderNextPick() {
     const s = state.settings;
     const opts = (arr) => arr.map((x) => `<option>${esc(x)}</option>`).join('');
-    const certChecks = s.certTypes.map((c) => `<label class="inline"><input type="checkbox" value="${esc(c)}" ${c==='offshore safety course'?'checked':''}> ${esc(c)}</label>`).join(' ');
+    const certChecks = s.certTypes.map((c) => `<label class="inline"><input type="checkbox" value="${esc(c)}" ${(s.offshoreRequiredCerts||[]).includes(c)?'checked':''}> ${esc(c)}</label>`).join(' ');
     $('nextpick').innerHTML = `<h2>Find next pick</h2>
       <div class="card">
         <label>Job title <input type="text" id="j_title" placeholder="Optional label"></label>
@@ -638,9 +638,9 @@
         <label>Repair type <select id="j_rep">${opts(s.repairTypes)}</select></label>
         <label>Destination country <select id="j_country">${opts(SB.countries)}</select></label>
         <label class="inline"><input type="checkbox" id="j_off" checked> Offshore</label>
-        <label>Start date <input type="date" id="j_start" value="2026-08-01"></label>
+        <label>Start date <input type="text" id="j_start" placeholder="dd/mm/yyyy" value="01/08/2026"></label>
         <label>Duration (days) <input type="number" id="j_dur" value="10" min="1"></label>
-        <label>Team size <select id="j_team"><option value="1" selected>1</option><option value="2">2</option></select></label>
+        <label>Team size <input type="number" id="j_team" value="1" min="1" step="1"></label>
         <div>Required certificates:<br>${certChecks}</div>
         <button id="runPick">Find engineers</button>
       </div>
@@ -652,10 +652,12 @@
     const titleVal = $('j_title').value.trim();
     const equipment = $('j_eq').value;
     const repairType = $('j_rep').value;
+    const startDate = SB.dates.fromDisplay($('j_start').value);
+    if (!startDate) { $('pickResult').innerHTML = '<p class="warn">Enter a valid start date as dd/mm/yyyy.</p>'; return; }
     const job = {
       equipment, repairType,
       country: $('j_country').value, offshore: $('j_off').checked,
-      startDate: $('j_start').value, durationDays: Number($('j_dur').value),
+      startDate, durationDays: Number($('j_dur').value),
       requiredCerts: [...document.querySelectorAll('#nextpick input[type=checkbox]:checked')].filter((c) => c.value).map((c) => c.value),
     };
     const teamSize = Number($('j_team').value) || 1;
@@ -678,9 +680,14 @@
       html += `<p class="warn">Warning: ${esc(String(job.durationDays))} days exceeds the maximum consecutive offshore days (${esc(String(state.settings.maxConsecutiveDays))}).</p>`;
     }
 
-    // recommended team line
-    if (teamSize === 2 && r.shortlist.length >= 2) {
-      html += `<p><strong>Recommended team:</strong> Lead: ${esc(r.shortlist[0].name)} | Assistant: ${esc(r.shortlist[1].name)}</p>`;
+    // recommended team (lead + assistants), for any team size >= 2
+    if (teamSize >= 2 && r.shortlist.length >= 1) {
+      const team = r.shortlist.slice(0, teamSize);
+      const assistants = team.slice(1).map((x) => esc(x.name)).join(', ');
+      html += `<p><strong>Recommended team of ${esc(String(teamSize))}:</strong> Lead: ${esc(team[0].name)}${assistants ? ' | Assistants: ' + assistants : ''}</p>`;
+      if (r.shortlist.length < teamSize) {
+        html += `<p class="warn">Only ${esc(String(r.shortlist.length))} eligible engineer${r.shortlist.length === 1 ? '' : 's'} for a team of ${esc(String(teamSize))}.</p>`;
+      }
     }
 
     html += '<h3>Shortlist</h3>';
