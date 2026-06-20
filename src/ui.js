@@ -66,17 +66,27 @@
   }
 
   function renderRoster() {
-    const rows = state.engineers.map((e) => {
-      const av = SB.rest.availabilityScore(e, today());
-      const rest = av < 0
-        ? `<span class="pill ot">${-av} rest days left</span>`
-        : `<span class="pill ok">available</span>`;
-      return `<tr data-id="${e.id}"><td><a href="#" data-id="${e.id}">${esc(e.name)}</a></td>
-        <td>${esc(e.nationalities.join(', '))}</td><td>${e.competence.length} skills</td><td>${rest}</td></tr>`;
+    const todayMs = today();
+    const sorted = [...state.engineers].sort((a, b) =>
+      SB.rest.availabilityScore(b, todayMs) - SB.rest.availabilityScore(a, todayMs));
+    const rows = sorted.map((e) => {
+      const av = SB.rest.availabilityScore(e, todayMs);
+      let avPill;
+      if (av < 0) {
+        avPill = `<span class="pill ot">${-av} rest days left</span>`;
+      } else if (av === 0) {
+        avPill = `<span class="pill ok">Available</span>`;
+      } else if (av >= 900) {
+        avPill = `<span class="pill ok">Available</span>`;
+      } else {
+        avPill = `<span class="pill ok">Available + ${av} days</span>`;
+      }
+      return `<tr data-id="${esc(e.id)}"><td><a href="#" data-id="${esc(e.id)}">${esc(e.name)}</a></td>
+        <td>${esc(e.nationalities.join(', '))}</td><td>${e.competence.length} skills</td><td>${avPill}</td></tr>`;
     }).join('');
     $('roster').innerHTML = `<h2>Roster</h2>
       <div class="roster-header"><button id="newEngineerBtn">New engineer</button></div>
-      <table><thead><tr><th>Name</th><th>Nationalities</th><th>Competence</th><th>Rest</th></tr></thead><tbody>${rows}</tbody></table><div id="detail"></div>`;
+      <table><thead><tr><th>Name</th><th>Nationalities</th><th>Competence</th><th>Availability</th></tr></thead><tbody>${rows}</tbody></table><div id="detail"></div>`;
     $('roster').querySelectorAll('a[data-id]').forEach((a) =>
       a.addEventListener('click', (ev) => { ev.preventDefault(); renderEngineerDetail(a.dataset.id); }));
     $('newEngineerBtn').addEventListener('click', () => {
@@ -421,18 +431,192 @@
     detailEl.appendChild(form);
   }
 
+  // ---- Compliance calendar state ----
+  const calState = { year: 0, month: 0 };
+
   function renderCompliance() {
-    const b = SB.compliance.expiringDocuments(state.engineers, today());
-    const block = (title, items) => `<h3>${title}</h3>` + (items.length
-      ? `<table><thead><tr><th>Who</th><th>Type</th><th>Detail</th><th>Expires</th><th>Days</th></tr></thead><tbody>` +
-        items.map((i) => `<tr><td>${esc(i.who)}</td><td>${esc(i.kind)}</td><td>${esc(i.detail)}</td><td>${esc(SB.dates.toDisplay(i.expiry))}</td><td>${i.days}</td></tr>`).join('') + `</tbody></table>`
-      : `<p class="muted">Nothing in this window.</p>`);
+    const todayMs = today();
+    const now = new Date(todayMs);
+    if (calState.year === 0) { calState.year = now.getUTCFullYear(); calState.month = now.getUTCMonth(); }
+    const allAlerts = SB.compliance.expiryAlerts(state.engineers);
+    renderComplianceCalendar(allAlerts);
+  }
+
+  function renderComplianceCalendar(allAlerts) {
+    const el = $('compliance');
+    el.innerHTML = '';
+
+    // heading
+    const h2 = document.createElement('h2');
+    h2.textContent = 'Compliance';
+    el.appendChild(h2);
+
+    // calendar card
+    const card = document.createElement('div');
+    card.className = 'cal-card';
+
+    // nav header
+    const navRow = document.createElement('div');
+    navRow.className = 'cal-nav';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'secondary';
+    prevBtn.textContent = '< Prev';
+    prevBtn.addEventListener('click', () => {
+      if (calState.month === 0) { calState.month = 11; calState.year -= 1; }
+      else { calState.month -= 1; }
+      renderComplianceCalendar(allAlerts);
+    });
+
+    const monthLabel = document.createElement('span');
+    monthLabel.className = 'cal-month-label';
+    const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    monthLabel.textContent = `${MONTH_NAMES[calState.month]} ${calState.year}`;
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'secondary';
+    nextBtn.textContent = 'Next >';
+    nextBtn.addEventListener('click', () => {
+      if (calState.month === 11) { calState.month = 0; calState.year += 1; }
+      else { calState.month += 1; }
+      renderComplianceCalendar(allAlerts);
+    });
+
+    const nextEventBtn = document.createElement('button');
+    nextEventBtn.type = 'button';
+    nextEventBtn.className = 'secondary';
+    nextEventBtn.textContent = 'Next event';
+    nextEventBtn.addEventListener('click', () => {
+      // last day of current viewed month (UTC)
+      const lastDay = SB.dates.formatISO(new Date(Date.UTC(calState.year, calState.month + 1, 0)).getTime());
+      const ahead = allAlerts.find((a) => a.alertDate > lastDay);
+      if (ahead) {
+        const d = new Date(SB.dates.parseISO(ahead.alertDate));
+        calState.year = d.getUTCFullYear();
+        calState.month = d.getUTCMonth();
+        renderComplianceCalendar(allAlerts);
+      } else {
+        noNextNote.hidden = false;
+      }
+    });
+
+    navRow.appendChild(prevBtn);
+    navRow.appendChild(monthLabel);
+    navRow.appendChild(nextBtn);
+    navRow.appendChild(nextEventBtn);
+    card.appendChild(navRow);
+
+    const noNextNote = document.createElement('p');
+    noNextNote.className = 'muted cal-no-next';
+    noNextNote.textContent = 'No further events ahead.';
+    noNextNote.hidden = true;
+    card.appendChild(noNextNote);
+
+    // build grid
+    const grid = document.createElement('div');
+    grid.className = 'cal-grid';
+
+    const DOW_HEADERS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    DOW_HEADERS.forEach((d) => {
+      const hdr = document.createElement('div');
+      hdr.className = 'cal-dow';
+      hdr.textContent = d;
+      grid.appendChild(hdr);
+    });
+
+    // first weekday of this month (Monday = 0)
+    const firstDate = new Date(Date.UTC(calState.year, calState.month, 1));
+    const startDow = (firstDate.getUTCDay() + 6) % 7; // 0=Mon
+    const daysInMonth = new Date(Date.UTC(calState.year, calState.month + 1, 0)).getUTCDate();
+
+    // alerts in this month indexed by day
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const monthPrefix = `${calState.year}-${pad2(calState.month + 1)}-`;
+    const alertsByDay = {};
+    for (const a of allAlerts) {
+      if (a.alertDate.startsWith(monthPrefix)) {
+        const day = parseInt(a.alertDate.slice(8, 10), 10);
+        if (!alertsByDay[day]) alertsByDay[day] = [];
+        alertsByDay[day].push(a);
+      }
+    }
+
+    // blank leading cells
+    for (let i = 0; i < startDow; i++) {
+      const blank = document.createElement('div');
+      blank.className = 'cal-day cal-blank';
+      grid.appendChild(blank);
+    }
+
+    // day cells
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'cal-day';
+      const hasEvents = Boolean(alertsByDay[d]);
+      if (hasEvents) cell.classList.add('has-event');
+      const num = document.createElement('span');
+      num.className = 'cal-day-num';
+      num.textContent = String(d);
+      cell.appendChild(num);
+      if (hasEvents) {
+        const dot = document.createElement('span');
+        dot.className = 'cal-event-dot';
+        cell.appendChild(dot);
+        cell.addEventListener('click', () => {
+          const iso = `${calState.year}-${pad2(calState.month + 1)}-${pad2(d)}`;
+          // scroll / highlight the event list entries for this day
+          el.querySelectorAll('.cal-event-row').forEach((row) => {
+            row.classList.toggle('cal-event-highlight', row.dataset.alertDate === iso);
+          });
+        });
+      }
+      grid.appendChild(cell);
+    }
+
+    card.appendChild(grid);
+
+    // in-month alert list
+    const monthAlerts = allAlerts.filter((a) => a.alertDate.startsWith(monthPrefix));
+    if (monthAlerts.length) {
+      const listHead = document.createElement('h3');
+      listHead.className = 'cal-list-head';
+      listHead.textContent = 'Events this month';
+      card.appendChild(listHead);
+      monthAlerts.forEach((a) => {
+        const row = document.createElement('p');
+        row.className = 'cal-event-row';
+        row.dataset.alertDate = a.alertDate;
+        row.textContent = `${SB.dates.toDisplay(a.alertDate)} - ${a.who} - ${a.kind} will expire ${SB.dates.toDisplay(a.realExpiry)}`;
+        card.appendChild(row);
+      });
+    } else {
+      const none = document.createElement('p');
+      none.className = 'muted';
+      none.textContent = 'No expiry alerts this month.';
+      card.appendChild(none);
+    }
+
+    el.appendChild(card);
+
+    // availability / resting overview
     const resting = SB.compliance.availabilityOverview(state.engineers, today());
-    const restBlock = resting.length
-      ? `<table><thead><tr><th>Who</th><th>Availability</th></tr></thead><tbody>` +
-        resting.map((r) => `<tr><td>${esc(r.name)}</td><td>${r.availability}</td></tr>`).join('') + `</tbody></table>`
-      : `<p class="muted">Everyone is fully rested.</p>`;
-    $('compliance').innerHTML = `<h2>Compliance</h2>${block('Expiring within 30 days', b.d30)}${block('31 to 60 days', b.d60)}${block('61 to 90 days', b.d90)}<h3>Availability (currently resting)</h3>${restBlock}`;
+    const restHead = document.createElement('h3');
+    restHead.textContent = 'Availability (currently resting)';
+    el.appendChild(restHead);
+    if (resting.length) {
+      const table = document.createElement('table');
+      table.innerHTML = `<thead><tr><th>Who</th><th>Availability</th></tr></thead><tbody>${
+        resting.map((r) => `<tr><td>${esc(r.name)}</td><td>${r.availability}</td></tr>`).join('')
+      }</tbody>`;
+      el.appendChild(table);
+    } else {
+      const p = document.createElement('p');
+      p.className = 'muted';
+      p.textContent = 'Everyone is fully rested.';
+      el.appendChild(p);
+    }
   }
 
   function renderNextPick() {
@@ -595,7 +779,7 @@
       const env = await SB.crypto.encrypt(payload, pw);
       const blob = new Blob([JSON.stringify(env)], { type: 'application/json' });
       const d = new Date();
-      const name = `scheduler-roster-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.sbs`;
+      const name = `service-scheduler-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.sbs`;
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
       URL.revokeObjectURL(a.href);
       state.password = pw;
@@ -637,5 +821,5 @@
     $('lock').hidden = false;
   });
 
-  SB.ui = { state, markDirty, markClean, showTab, renderRoster, renderEngineerDetail, renderCompliance, renderNextPick, renderSettings };
+  SB.ui = { state, calState, markDirty, markClean, showTab, renderRoster, renderEngineerDetail, renderCompliance, renderNextPick, renderSettings };
 })();
