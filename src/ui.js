@@ -2,7 +2,7 @@
 ;(function () {
   const SB = (globalThis.SB ||= {});
   const $ = (id) => document.getElementById(id);
-  const state = { settings: null, engineers: [], dirty: false };
+  const state = { settings: null, engineers: [], dirty: false, password: '' };
 
   const showApp = () => {
     $('lock').hidden = true; $('tabs').hidden = false;
@@ -11,7 +11,7 @@
   const markDirty = () => { state.dirty = true; $('fileState').textContent = 'Unsaved changes'; };
   const markClean = () => { state.dirty = false; $('fileState').textContent = 'Roster loaded'; };
 
-  // password meter
+  // password meter (lock screen)
   $('pw').addEventListener('input', (e) => {
     const s = SB.strength.passwordStrength(e.target.value);
     const m = $('meter'); m.className = 'meter m-' + s;
@@ -21,7 +21,7 @@
   });
 
   $('newBtn').addEventListener('click', () => {
-    state.settings = SB.demo.settings(); state.engineers = SB.demo.engineers(); showApp();
+    state.settings = SB.demo.settings(); state.engineers = SB.demo.engineers(); state.password = ''; showApp();
   });
 
   $('unlockBtn').addEventListener('click', async () => {
@@ -30,8 +30,9 @@
     if (!file) { showError('Choose a roster file first.'); return; }
     try {
       const env = JSON.parse(await file.text());
-      const payload = await SB.crypto.decrypt(env, $('pw').value);
-      state.settings = payload.settings; state.engineers = payload.engineers; showApp();
+      const pw = $('pw').value;
+      const payload = await SB.crypto.decrypt(env, pw);
+      state.settings = payload.settings; state.engineers = payload.engineers; state.password = pw; showApp();
     } catch (e) { showError(e.message); }
   });
   const showError = (msg) => { const el = $('lockError'); el.textContent = msg; el.hidden = false; };
@@ -41,10 +42,11 @@
     b.addEventListener('click', () => showTab(b.dataset.tab)));
   function showTab(name) {
     document.querySelectorAll('#tabs button[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
-    for (const t of ['roster','nextpick','compliance']) $(t).hidden = (t !== name);
+    for (const t of ['roster','nextpick','compliance','settings']) $(t).hidden = (t !== name);
     if (name === 'roster') SB.ui.renderRoster();
     if (name === 'nextpick') SB.ui.renderNextPick();
     if (name === 'compliance') SB.ui.renderCompliance();
+    if (name === 'settings') SB.ui.renderSettings();
   }
 
   const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
@@ -55,7 +57,6 @@
     if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
       return globalThis.crypto.randomUUID();
     }
-    // fallback: derive from the highest numeric suffix in existing ids
     let max = 0;
     for (const e of state.engineers) {
       const m = String(e.id).match(/(\d+)$/);
@@ -66,8 +67,10 @@
 
   function renderRoster() {
     const rows = state.engineers.map((e) => {
-      const bank = SB.rest.restDaysBank(e, today());
-      const rest = bank > 0 ? `<span class="pill ot">${bank} rest days left</span>` : `<span class="pill ok">rested</span>`;
+      const av = SB.rest.availabilityScore(e, today());
+      const rest = av < 0
+        ? `<span class="pill ot">${-av} rest days left</span>`
+        : `<span class="pill ok">available</span>`;
       return `<tr data-id="${e.id}"><td><a href="#" data-id="${e.id}">${esc(e.name)}</a></td>
         <td>${esc(e.nationalities.join(', '))}</td><td>${e.competence.length} skills</td><td>${rest}</td></tr>`;
     }).join('');
@@ -90,14 +93,16 @@
   function renderEngineerDetail(id) {
     const e = state.engineers.find((x) => x.id === id); if (!e) return;
     const list = (arr, fn) => arr.map(fn).join('') || '<li class="muted">none</li>';
+    const av = SB.rest.availabilityScore(e, today());
+    const avDisplay = av >= 900 ? 'Available' : String(av);
     const detailEl = $('detail');
     detailEl.innerHTML = `<div class="card"><h3>${esc(e.name)}</h3>
       <p><strong>Nationalities:</strong> ${esc(e.nationalities.join(', '))}</p>
-      <p><strong>Passports:</strong><ul>${list(e.passports, (p) => `<li>${esc(p.country)} ${esc(p.number)}, expires ${esc(p.expiry)}</li>`)}</ul></p>
-      <p><strong>Visas:</strong><ul>${list(e.visas, (v) => `<li>${esc(v.country)}, ${esc(v.type)}, expires ${esc(v.expiry)}</li>`)}</ul></p>
-      <p><strong>Certificates:</strong><ul>${list(e.certs, (c) => `<li>${esc(c.type)}, expires ${esc(c.expiry)}</li>`)}</ul></p>
+      <p><strong>Passports:</strong><ul>${list(e.passports, (p) => `<li>${esc(p.country)} ${esc(p.number)}, expires ${esc(SB.dates.toDisplay(p.expiry))}</li>`)}</ul></p>
+      <p><strong>Visas:</strong><ul>${list(e.visas, (v) => `<li>${esc(v.country)}, ${esc(v.type)}, expires ${esc(SB.dates.toDisplay(v.expiry))}</li>`)}</ul></p>
+      <p><strong>Certificates:</strong><ul>${list(e.certs, (c) => `<li>${esc(c.type)}, expires ${esc(SB.dates.toDisplay(c.expiry))}</li>`)}</ul></p>
       <p><strong>Competence:</strong><ul>${list(e.competence, (c) => `<li>${esc(c.equipment)} / ${esc(c.repairType)} (level ${c.level})</li>`)}</ul></p>
-      <p><strong>Rest days remaining:</strong> ${SB.rest.restDaysBank(e, today())}</p>
+      <p><strong>Availability score:</strong> ${esc(avDisplay)}</p>
       <button data-edit-id="${esc(e.id)}">Edit</button></div>`;
     detailEl.querySelector('button[data-edit-id]').addEventListener('click', () => {
       renderEngineerEditForm(id);
@@ -111,7 +116,6 @@
     const s = state.settings;
     const detailEl = $('detail');
 
-    // build the form container
     const form = document.createElement('div');
     form.className = 'card';
     form.setAttribute('data-edit-id', id);
@@ -120,7 +124,6 @@
     h.textContent = 'Edit engineer';
     form.appendChild(h);
 
-    // helper: labelled field row
     function fieldRow(labelText, inputEl) {
       const row = document.createElement('p');
       const lbl = document.createElement('label');
@@ -130,21 +133,21 @@
       return row;
     }
 
-    // helper: make a text input
     function textInput(value) {
       const el = document.createElement('input');
       el.type = 'text'; el.value = value || '';
       return el;
     }
 
-    // helper: make a date input
-    function dateInput(value) {
+    // date input: text field with dd/mm/yyyy display
+    function dateInput(isoValue) {
       const el = document.createElement('input');
-      el.type = 'date'; el.value = value || '';
+      el.type = 'text'; el.placeholder = 'dd/mm/yyyy';
+      el.value = SB.dates.toDisplay(isoValue || '');
+      el.className = 'inp-date';
       return el;
     }
 
-    // helper: make a number input
     function numberInput(value, placeholder) {
       const el = document.createElement('input');
       el.type = 'number'; el.value = (value !== null && value !== undefined) ? value : '';
@@ -152,19 +155,24 @@
       return el;
     }
 
-    // helper: select element
-    function selectEl(options, selected) {
+    // select with fallback: if storedValue is not in opts, add it as a selected option
+    function selectEl(opts, storedValue) {
       const el = document.createElement('select');
+      const options = [...opts];
+      if (storedValue && !options.includes(storedValue)) {
+        const extra = document.createElement('option');
+        extra.value = storedValue; extra.textContent = storedValue; extra.selected = true;
+        el.appendChild(extra);
+      }
       options.forEach((o) => {
         const opt = document.createElement('option');
         opt.value = o; opt.textContent = o;
-        if (o === selected) opt.selected = true;
+        if (o === storedValue) opt.selected = true;
         el.appendChild(opt);
       });
       return el;
     }
 
-    // helper: remove button
     function removeBtn() {
       const b = document.createElement('button');
       b.type = 'button'; b.textContent = 'Remove';
@@ -172,7 +180,6 @@
       return b;
     }
 
-    // helper: build a list section with dynamic rows
     function buildListSection(title, rows, buildRow, addText) {
       const section = document.createElement('div');
       section.className = 'edit-section';
@@ -183,15 +190,11 @@
       const list = document.createElement('div');
       list.className = 'edit-list';
 
-      rows.forEach((item) => {
-        list.appendChild(buildRow(item));
-      });
+      rows.forEach((item) => { list.appendChild(buildRow(item)); });
 
       const addBtn = document.createElement('button');
       addBtn.type = 'button'; addBtn.textContent = addText;
-      addBtn.addEventListener('click', () => {
-        list.appendChild(buildRow(null));
-      });
+      addBtn.addEventListener('click', () => { list.appendChild(buildRow(null)); });
 
       section.appendChild(list);
       section.appendChild(addBtn);
@@ -225,7 +228,7 @@
       row.className = 'edit-row';
       const country = textInput(p ? p.country : ''); country.placeholder = 'Country'; country.className = 'inp-pp-country';
       const number = textInput(p ? p.number : ''); number.placeholder = 'Number'; number.className = 'inp-pp-number';
-      const expiry = dateInput(p ? p.expiry : ''); expiry.className = 'inp-pp-expiry';
+      const expiry = dateInput(p ? p.expiry : ''); expiry.className += ' inp-pp-expiry';
       const rb = removeBtn(); rb.addEventListener('click', () => row.remove());
       [country, number, expiry, rb].forEach((el) => row.appendChild(el));
       return row;
@@ -238,11 +241,13 @@
     function buildVisaRow(v) {
       const row = document.createElement('div');
       row.className = 'edit-row';
-      const country = textInput(v ? v.country : ''); country.placeholder = 'Country'; country.className = 'inp-visa-country';
-      const type = textInput(v ? v.type : ''); type.placeholder = 'Type (e.g. Work (Service Supplier visa))'; type.className = 'inp-visa-type';
-      const expiry = dateInput(v ? v.expiry : ''); expiry.className = 'inp-visa-expiry';
+      const countrySel = selectEl(SB.countries, v ? v.country : (SB.countries[0] || ''));
+      countrySel.className = 'inp-visa-country';
+      const typeSel = selectEl(s.visaTypes || [], v ? v.type : ((s.visaTypes || [])[0] || ''));
+      typeSel.className = 'inp-visa-type';
+      const expiry = dateInput(v ? v.expiry : ''); expiry.className += ' inp-visa-expiry';
       const rb = removeBtn(); rb.addEventListener('click', () => row.remove());
-      [country, type, expiry, rb].forEach((el) => row.appendChild(el));
+      [countrySel, typeSel, expiry, rb].forEach((el) => row.appendChild(el));
       return row;
     }
     const { section: visaSection } = buildListSection(
@@ -253,10 +258,11 @@
     function buildCertRow(c) {
       const row = document.createElement('div');
       row.className = 'edit-row';
-      const type = textInput(c ? c.type : ''); type.placeholder = 'Type'; type.className = 'inp-cert-type';
-      const expiry = dateInput(c ? c.expiry : ''); expiry.className = 'inp-cert-expiry';
+      const typeSel = selectEl(s.certTypes || [], c ? c.type : ((s.certTypes || [])[0] || ''));
+      typeSel.className = 'inp-cert-type';
+      const expiry = dateInput(c ? c.expiry : ''); expiry.className += ' inp-cert-expiry';
       const rb = removeBtn(); rb.addEventListener('click', () => row.remove());
-      [type, expiry, rb].forEach((el) => row.appendChild(el));
+      [typeSel, expiry, rb].forEach((el) => row.appendChild(el));
       return row;
     }
     const { section: certSection } = buildListSection(
@@ -312,8 +318,8 @@
     function buildVacRow(v) {
       const row = document.createElement('div');
       row.className = 'edit-row';
-      const start = dateInput(v ? v.start : ''); start.className = 'inp-vac-start'; start.placeholder = 'Start';
-      const end = dateInput(v ? v.end : ''); end.className = 'inp-vac-end'; end.placeholder = 'End';
+      const start = dateInput(v ? v.start : ''); start.className += ' inp-vac-start'; start.placeholder = 'dd/mm/yyyy';
+      const end = dateInput(v ? v.end : ''); end.className += ' inp-vac-end'; end.placeholder = 'dd/mm/yyyy';
       const rb = removeBtn(); rb.addEventListener('click', () => row.remove());
       const startLabel = document.createElement('label');
       startLabel.textContent = 'Start: '; startLabel.appendChild(start);
@@ -344,25 +350,27 @@
     const saveBtn = document.createElement('button');
     saveBtn.type = 'button'; saveBtn.textContent = 'Save changes';
     saveBtn.addEventListener('click', () => {
-      // read all fields from the live DOM
       const nat = [...form.querySelectorAll('.inp-nationality')]
         .map((el) => el.value.trim()).filter(Boolean);
+
+      // helper: read dd/mm/yyyy text field and convert back to ISO
+      const readDate = (el) => SB.dates.fromDisplay(el.value.trim());
 
       const passports = [...form.querySelectorAll('.edit-list')[0].children].map((row) => ({
         country: row.querySelector('.inp-pp-country').value.trim(),
         number: row.querySelector('.inp-pp-number').value.trim(),
-        expiry: row.querySelector('.inp-pp-expiry').value,
+        expiry: readDate(row.querySelector('.inp-pp-expiry')),
       })).filter((p) => p.country || p.number || p.expiry);
 
       const visas = [...form.querySelectorAll('.edit-list')[1].children].map((row) => ({
-        country: row.querySelector('.inp-visa-country').value.trim(),
-        type: row.querySelector('.inp-visa-type').value.trim(),
-        expiry: row.querySelector('.inp-visa-expiry').value,
+        country: row.querySelector('.inp-visa-country').value,
+        type: row.querySelector('.inp-visa-type').value,
+        expiry: readDate(row.querySelector('.inp-visa-expiry')),
       })).filter((v) => v.country || v.type || v.expiry);
 
       const certs = [...form.querySelectorAll('.edit-list')[2].children].map((row) => ({
-        type: row.querySelector('.inp-cert-type').value.trim(),
-        expiry: row.querySelector('.inp-cert-expiry').value,
+        type: row.querySelector('.inp-cert-type').value,
+        expiry: readDate(row.querySelector('.inp-cert-expiry')),
       })).filter((c) => c.type || c.expiry);
 
       const competence = [...form.querySelectorAll('.edit-list')[3].children].map((row) => ({
@@ -371,16 +379,16 @@
         level: Number(row.querySelector('.inp-comp-lvl').value),
       }));
 
-      const loEnd = form.querySelector('#edit-lo-end').value;
+      const loEndRaw = readDate(form.querySelector('#edit-lo-end'));
       const loDur = form.querySelector('#edit-lo-dur').value;
-      const lastOffshore = loEnd ? { end: loEnd, durationDays: Number(loDur) || 0 } : null;
+      const lastOffshore = loEndRaw ? { end: loEndRaw, durationDays: Number(loDur) || 0 } : null;
 
       const rdoVal = form.querySelector('#edit-rdo').value.trim();
       const restDaysOverride = rdoVal !== '' ? Number(rdoVal) : null;
 
       const vacations = [...form.querySelectorAll('.edit-list')[5].children].map((row) => ({
-        start: row.querySelector('.inp-vac-start').value,
-        end: row.querySelector('.inp-vac-end').value,
+        start: readDate(row.querySelector('.inp-vac-start')),
+        end: readDate(row.querySelector('.inp-vac-end')),
       })).filter((v) => v.start || v.end);
 
       const updated = {
@@ -403,9 +411,7 @@
 
     const cancelBtn = document.createElement('button');
     cancelBtn.type = 'button'; cancelBtn.textContent = 'Cancel';
-    cancelBtn.addEventListener('click', () => {
-      renderEngineerDetail(id);
-    });
+    cancelBtn.addEventListener('click', () => { renderEngineerDetail(id); });
 
     btnRow.appendChild(saveBtn);
     btnRow.appendChild(cancelBtn);
@@ -419,14 +425,14 @@
     const b = SB.compliance.expiringDocuments(state.engineers, today());
     const block = (title, items) => `<h3>${title}</h3>` + (items.length
       ? `<table><thead><tr><th>Who</th><th>Type</th><th>Detail</th><th>Expires</th><th>Days</th></tr></thead><tbody>` +
-        items.map((i) => `<tr><td>${esc(i.who)}</td><td>${esc(i.kind)}</td><td>${esc(i.detail)}</td><td>${esc(i.expiry)}</td><td>${i.days}</td></tr>`).join('') + `</tbody></table>`
+        items.map((i) => `<tr><td>${esc(i.who)}</td><td>${esc(i.kind)}</td><td>${esc(i.detail)}</td><td>${esc(SB.dates.toDisplay(i.expiry))}</td><td>${i.days}</td></tr>`).join('') + `</tbody></table>`
       : `<p class="muted">Nothing in this window.</p>`);
-    const rest = SB.compliance.restOverview(state.engineers, today());
-    const restBlock = rest.length
-      ? `<table><thead><tr><th>Who</th><th>Rest days remaining</th></tr></thead><tbody>` +
-        rest.map((r) => `<tr><td>${esc(r.name)}</td><td>${r.restDaysBank}</td></tr>`).join('') + `</tbody></table>`
+    const resting = SB.compliance.availabilityOverview(state.engineers, today());
+    const restBlock = resting.length
+      ? `<table><thead><tr><th>Who</th><th>Availability</th></tr></thead><tbody>` +
+        resting.map((r) => `<tr><td>${esc(r.name)}</td><td>${r.availability}</td></tr>`).join('') + `</tbody></table>`
       : `<p class="muted">Everyone is fully rested.</p>`;
-    $('compliance').innerHTML = `<h2>Compliance</h2>${block('Expiring within 30 days', b.d30)}${block('31 to 60 days', b.d60)}${block('61 to 90 days', b.d90)}<h3>Currently resting</h3>${restBlock}`;
+    $('compliance').innerHTML = `<h2>Compliance</h2>${block('Expiring within 30 days', b.d30)}${block('31 to 60 days', b.d60)}${block('61 to 90 days', b.d90)}<h3>Availability (currently resting)</h3>${restBlock}`;
   }
 
   function renderNextPick() {
@@ -458,7 +464,12 @@
     const r = SB.engine.nextPick(job, state.engineers, state.settings);
     const shortlist = r.shortlist.length
       ? `<table><thead><tr><th>Rank</th><th>Name</th><th>Status</th><th>Reason</th></tr></thead><tbody>` +
-        r.shortlist.map((x, i) => `<tr><td>${i+1}</td><td>${esc(x.name)}</td><td>${x.overtime?'<span class="pill ot">overtime</span>':'<span class="pill ok">rested</span>'}</td><td>${esc(x.reason)}</td></tr>`).join('') + `</tbody></table>`
+        r.shortlist.map((x, i) => {
+          const pill = x.overtime
+            ? '<span class="pill ot">overtime</span>'
+            : '<span class="pill ok">available</span>';
+          return `<tr><td>${i+1}</td><td>${esc(x.name)}</td><td>${pill}</td><td>${esc(x.reason)}</td></tr>`;
+        }).join('') + `</tbody></table>`
       : `<p class="muted">No eligible engineers for this job.</p>`;
     const RULE = { 'no-competence':'no matching competence', 'no-valid-passport':'passport invalid within 6 months', 'needs-visa':'no valid visa for destination', 'cert-missing-or-expired':'required certificate missing or expired', 'on-vacation':'on vacation during the job' };
     const excluded = r.excluded.length
@@ -467,16 +478,164 @@
     $('pickResult').innerHTML = `<h3>Shortlist</h3>${shortlist}${excluded}`;
   }
 
-  async function save() {
-    const payload = { meta: { appVersion: 1 }, settings: state.settings, engineers: state.engineers };
-    const env = await SB.crypto.encrypt(payload, $('pw').value);
-    const blob = new Blob([JSON.stringify(env)], { type: 'application/json' });
-    const d = new Date();
-    const name = `scheduler-roster-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.sbs`;
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
-    URL.revokeObjectURL(a.href); markClean();
-  }
-  $('saveBtn').addEventListener('click', save);
+  // ---- Settings tab ----
+  function renderSettings() {
+    const s = state.settings;
+    const el = $('settings');
+    el.innerHTML = '<h2>Settings</h2>';
 
-  SB.ui = { state, markDirty, markClean, showTab, renderRoster, renderEngineerDetail, renderCompliance, renderNextPick };
+    const lists = [
+      { key: 'equipment', label: 'Equipment' },
+      { key: 'repairTypes', label: 'Repair types' },
+      { key: 'certTypes', label: 'Certificate types' },
+      { key: 'visaTypes', label: 'Visa types' },
+    ];
+
+    lists.forEach(({ key, label }) => {
+      const section = document.createElement('div');
+      section.className = 'edit-section';
+
+      const heading = document.createElement('h3');
+      heading.textContent = label;
+      section.appendChild(heading);
+
+      const itemsDiv = document.createElement('div');
+      itemsDiv.className = 'edit-list';
+      (s[key] || []).forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'edit-row';
+        const span = document.createElement('span');
+        span.textContent = item;
+        const rb = document.createElement('button');
+        rb.type = 'button'; rb.textContent = 'Remove'; rb.className = 'btn-remove';
+        rb.addEventListener('click', () => {
+          s[key] = s[key].filter((x) => x !== item);
+          markDirty();
+          renderSettings();
+        });
+        row.appendChild(span);
+        row.appendChild(rb);
+        itemsDiv.appendChild(row);
+      });
+      section.appendChild(itemsDiv);
+
+      const addRow = document.createElement('div');
+      addRow.className = 'edit-row';
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.placeholder = 'New item';
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button'; addBtn.textContent = 'Add';
+      addBtn.addEventListener('click', () => {
+        const val = inp.value.trim();
+        if (!val) return;
+        if (!s[key]) s[key] = [];
+        s[key].push(val);
+        markDirty();
+        renderSettings();
+      });
+      addRow.appendChild(inp);
+      addRow.appendChild(addBtn);
+      section.appendChild(addRow);
+
+      el.appendChild(section);
+    });
+  }
+
+  // ---- Save with password prompt ----
+  function openSavePanel() {
+    let panel = $('savePanel');
+    if (panel) { panel.hidden = false; return; }
+
+    panel = document.createElement('div');
+    panel.id = 'savePanel';
+    panel.className = 'save-panel card';
+
+    const title = document.createElement('p');
+    title.innerHTML = '<strong>Set a password for this file (leave blank for no password)</strong>';
+    panel.appendChild(title);
+
+    const pwInput = document.createElement('input');
+    pwInput.type = 'password'; pwInput.id = 'savePw'; pwInput.autocomplete = 'off';
+    pwInput.value = state.password || '';
+    panel.appendChild(pwInput);
+
+    const meterDiv = document.createElement('div');
+    meterDiv.id = 'saveMeter'; meterDiv.className = 'meter';
+    meterDiv.innerHTML = '<span></span>';
+    panel.appendChild(meterDiv);
+
+    const meterLbl = document.createElement('div');
+    meterLbl.id = 'saveMeterLabel'; meterLbl.className = 'meter-label';
+    panel.appendChild(meterLbl);
+
+    // update meter on input
+    pwInput.addEventListener('input', () => {
+      const s = SB.strength.passwordStrength(pwInput.value);
+      meterDiv.className = 'meter m-' + s;
+      meterDiv.innerHTML = '<span></span>';
+      meterLbl.textContent = 'Password: ' + s.replace('-', ' ');
+    });
+
+    // initialise meter for prefilled value
+    if (state.password) {
+      const s = SB.strength.passwordStrength(state.password);
+      meterDiv.className = 'meter m-' + s;
+      meterDiv.innerHTML = '<span></span>';
+      meterLbl.textContent = 'Password: ' + s.replace('-', ' ');
+    }
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'row';
+
+    const doSaveBtn = document.createElement('button');
+    doSaveBtn.type = 'button'; doSaveBtn.textContent = 'Save file';
+    doSaveBtn.addEventListener('click', async () => {
+      const pw = pwInput.value;
+      const payload = { meta: { appVersion: 1 }, settings: state.settings, engineers: state.engineers };
+      const env = await SB.crypto.encrypt(payload, pw);
+      const blob = new Blob([JSON.stringify(env)], { type: 'application/json' });
+      const d = new Date();
+      const name = `scheduler-roster-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.sbs`;
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+      URL.revokeObjectURL(a.href);
+      state.password = pw;
+      markClean();
+      panel.hidden = true;
+    });
+
+    const cancelSaveBtn = document.createElement('button');
+    cancelSaveBtn.type = 'button'; cancelSaveBtn.textContent = 'Cancel'; cancelSaveBtn.className = 'secondary';
+    cancelSaveBtn.addEventListener('click', () => { panel.hidden = true; });
+
+    btnRow.appendChild(doSaveBtn);
+    btnRow.appendChild(cancelSaveBtn);
+    panel.appendChild(btnRow);
+
+    // insert above the tabs nav
+    const tabs = $('tabs');
+    tabs.parentNode.insertBefore(panel, tabs);
+  }
+
+  $('saveBtn').addEventListener('click', openSavePanel);
+
+  // ---- Quit ----
+  $('quitBtn').addEventListener('click', () => {
+    if (state.dirty) {
+      if (!window.confirm('You have unsaved changes. Quit without saving?')) return;
+    }
+    state.engineers = []; state.settings = null; state.password = '';
+    state.dirty = false; $('fileState').textContent = 'No roster loaded';
+    $('tabs').hidden = true;
+    for (const t of ['roster','nextpick','compliance','settings']) $(t).hidden = true;
+    const panel = $('savePanel');
+    if (panel) panel.hidden = true;
+    // reset lock screen inputs
+    $('fileInput').value = ''; $('pw').value = '';
+    const m = $('meter'); m.className = 'meter'; m.innerHTML = '<span></span>';
+    const ml = $('meterLabel'); if (ml) ml.textContent = '';
+    $('lockError').hidden = true;
+    $('lock').hidden = false;
+  });
+
+  SB.ui = { state, markDirty, markClean, showTab, renderRoster, renderEngineerDetail, renderCompliance, renderNextPick, renderSettings };
 })();

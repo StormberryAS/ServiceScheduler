@@ -40,3 +40,11 @@ a { color:#2f6fd0; }
 .pill.ot { background:#fbeede; color:#8a5a12; } .pill.ok { background:#e3f5ea; color:#1f7a45; }
 .excluded td { color:var(--muted); }
 ul { margin:.3rem 0; padding-left:1.2rem; }
+.save-panel { max-width:480px; margin:1rem auto; }
+.edit-section { margin:1rem 0; }
+.edit-list { display:flex; flex-direction:column; gap:.4rem; margin:.4rem 0; }
+.edit-row { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+.edit-row span { flex:1; }
+.edit-actions { display:flex; gap:.5rem; margin-top:1rem; }
+.btn-remove { background:#e9edf2; color:var(--ink); padding:.3rem .65rem; font-size:.85rem; }
+.roster-header { margin-bottom:.75rem; }
