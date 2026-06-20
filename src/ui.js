@@ -437,7 +437,7 @@
       <div class="card">
         <label>Equipment <select id="j_eq">${opts(s.equipment)}</select></label>
         <label>Repair type <select id="j_rep">${opts(s.repairTypes)}</select></label>
-        <label>Destination country <select id="j_country">${opts(s.countries)}</select></label>
+        <label>Destination country <select id="j_country">${opts(SB.countries)}</select></label>
         <label class="inline"><input type="checkbox" id="j_off" checked> Offshore</label>
         <label>Start date <input type="date" id="j_start" value="2026-08-01"></label>
         <label>Duration (days) <input type="number" id="j_dur" value="10" min="1"></label>

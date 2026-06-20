@@ -1,1 +1,1 @@
-{"name":"service-scheduler","private":true,"type":"module","scripts":{"test":"node --test"},"devDependencies":{"hash-wasm":"4.12.0"}}
+{"name":"service-scheduler","private":true,"type":"module","scripts":{"test":"node --test"}}

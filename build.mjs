@@ -4,16 +4,16 @@ const root = new URL('./', import.meta.url);
 const read = (p) => readFile(new URL(p, root), 'utf8');
 
 const order = [
-  'vendor/hash-wasm-argon2.js', 'src/dates.js', 'src/rest.js', 'src/eligibility.js',
-  'src/engine.js', 'src/strength.js', 'src/crypto-argon2.js', 'src/crypto.js',
-  'src/compliance.js', 'src/demo.js', 'src/ui.js',
+  'src/dates.js', 'src/rest.js', 'src/eligibility.js',
+  'src/engine.js', 'src/strength.js', 'src/crypto.js',
+  'src/compliance.js', 'src/demo.js', 'src/countries.js', 'src/ui.js',
 ];
 
 const css = await read('style.css');
 let scripts = '';
 for (const f of order) scripts += `\n/* ${f} */\n` + await read(f);
 
-const csp = "default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'";
+const csp = "default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'";
 let html = await read('index.html');
 // remove external link + script tags, inject inline style + one inline script + CSP meta
 html = html.replace('<link rel="stylesheet" href="style.css">',
