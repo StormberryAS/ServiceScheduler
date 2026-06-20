@@ -18,6 +18,11 @@ test('exactly 15 synthetic engineers with required edge cases', () => {
   assert.ok(es.some((e) => e.availability.lastOffshore));
   // at least one has a vacation booked
   assert.ok(es.some((e) => (e.availability.vacations || []).length > 0));
+  // at least one engineer has an assignment (double-booking coverage)
+  assert.ok(es.some((e) => (e.assignments || []).length > 0));
+  // settings includes offshoreRequiredCerts
+  assert.ok(Array.isArray(settings().offshoreRequiredCerts));
+  assert.ok(settings().offshoreRequiredCerts.includes('offshore medical certificate'));
 });
 test('a representative job yields both shortlist and exclusions', () => {
   const job = { title:'Crane service Aberdeen', equipment:'offshore crane',

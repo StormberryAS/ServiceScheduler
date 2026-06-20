@@ -17,16 +17,23 @@
     const visa = e.visas.find((v) => v.country === job.country && D().parseISO(v.expiry) >= end);
     return visa ? { ok: true } : { ok: false, rule: 'needs-visa' };
   };
-  const OFFSHORE_CERT = 'offshore safety course';
-  const certsOk = (e, job) => {
+  const certsOk = (e, job, settings) => {
     const end = jobEndMs(job);
-    const required = job.offshore && !job.requiredCerts.includes(OFFSHORE_CERT)
-      ? [...job.requiredCerts, OFFSHORE_CERT] : job.requiredCerts;
+    // Offshore jobs require all job.requiredCerts plus every cert in settings.offshoreRequiredCerts.
+    const offshoreRequired = settings.offshoreRequiredCerts || ['offshore safety course'];
+    const required = job.offshore
+      ? [...new Set([...job.requiredCerts, ...offshoreRequired])]
+      : job.requiredCerts;
     return required.every((t) => e.certs.some((c) => c.type === t && D().parseISO(c.expiry) >= end));
   };
   const onVacation = (e, job) => {
     const s = D().parseISO(job.startDate), end = jobEndMs(job);
     return (e.availability.vacations || []).some((v) => D().parseISO(v.start) <= end && D().parseISO(v.end) >= s);
+  };
+  // An engineer is double-booked if any existing assignment overlaps the job window [start, end] inclusive.
+  const isDoubleBooked = (e, job) => {
+    const s = D().parseISO(job.startDate), end = jobEndMs(job);
+    return (e.assignments || []).some((a) => D().parseISO(a.start) <= end && D().parseISO(a.end) >= s);
   };
   const passportWarning = (e, job, settings) => {
     const usable = usablePassports(e, job, settings);
@@ -35,12 +42,14 @@
     return usable.every((p) => D().parseISO(p.expiry) < warn);
   };
 
+  // Hard-filter order: competence -> travel -> certs -> vacation -> double-booked.
   const evaluate = (e, job, settings) => {
     if (!hasCompetence(e, job)) return { eligible: false, failedRule: 'no-competence', passportWarning: false };
     const t = travel(e, job, settings);
     if (!t.ok) return { eligible: false, failedRule: t.rule, passportWarning: false };
-    if (!certsOk(e, job)) return { eligible: false, failedRule: 'cert-missing-or-expired', passportWarning: false };
+    if (!certsOk(e, job, settings)) return { eligible: false, failedRule: 'cert-missing-or-expired', passportWarning: false };
     if (onVacation(e, job)) return { eligible: false, failedRule: 'on-vacation', passportWarning: false };
+    if (isDoubleBooked(e, job)) return { eligible: false, failedRule: 'double-booked', passportWarning: false };
     return { eligible: true, failedRule: null, passportWarning: passportWarning(e, job, settings) };
   };
   SB.eligibility = { evaluate, jobEndMs };

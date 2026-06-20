@@ -9,17 +9,26 @@
     if (warn) r += '; passport nearing the validity limit';
     return r;
   };
+  // Returns the highest competence level for the job's equipment + repairType combination.
+  // Entries that match but carry no level are treated as level 1.
+  const competenceLevel = (e, job) => {
+    const matches = e.competence.filter((c) => c.equipment === job.equipment && c.repairType === job.repairType);
+    if (!matches.length) return 0;
+    return Math.max(...matches.map((c) => c.level ?? 1));
+  };
   const nextPick = (job, engineers, settings) => {
     const startMs = SB.dates.parseISO(job.startDate);
     const shortlist = [], excluded = [];
     for (const e of engineers) {
       const ev = SB.eligibility.evaluate(e, job, settings);
       if (!ev.eligible) { excluded.push({ id: e.id, name: e.name, failedRule: ev.failedRule }); continue; }
-      const av = SB.rest.availabilityScore(e, startMs);
+      const av = SB.rest.availabilityScore(e, startMs, settings);
+      const level = competenceLevel(e, job);
       shortlist.push({ id: e.id, name: e.name, availability: av, overtime: av < 0,
-        passportWarning: ev.passportWarning, reason: reasonFor(av, ev.passportWarning) });
+        passportWarning: ev.passportWarning, reason: reasonFor(av, ev.passportWarning), level });
     }
-    shortlist.sort((a, b) => b.availability - a.availability || a.name.localeCompare(b.name));
+    // Sort: competence level DESC, then availability score DESC, then name ASC.
+    shortlist.sort((a, b) => b.level - a.level || b.availability - a.availability || a.name.localeCompare(b.name));
     return { shortlist, excluded };
   };
   SB.engine = { nextPick };

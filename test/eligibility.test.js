@@ -16,6 +16,7 @@ const baseEng = () => ({
   certs:[{ type:'offshore safety course', expiry:'2027-01-01' }],
   competence:[{ equipment:'offshore crane', repairType:'preventive (scheduled) service', level:2 }],
   availability:{ lastOffshore:null, restDaysOverride:null, vacations:[] },
+  assignments: [],
 });
 
 test('fully qualified engineer is eligible', () => {
@@ -59,4 +60,30 @@ test('onshore job without offshore safety course cert passes', () => {
   const job = { ...baseJob, offshore: false, country: 'Norway', requiredCerts: [] };
   const e = baseEng(); e.certs = []; // no offshore safety course, not required onshore
   assert.deepEqual(evaluate(e, job, settings), { eligible: true, failedRule: null, passportWarning: false });
+});
+test('offshore job requires offshore medical certificate when listed in settings.offshoreRequiredCerts', () => {
+  const settingsWithMedical = { ...settings, offshoreRequiredCerts: ['offshore safety course', 'offshore medical certificate'] };
+  const job = { ...baseJob, offshore: true, requiredCerts: [] };
+  // Engineer holds the safety course but NOT the medical cert.
+  const e = baseEng();
+  e.certs = [{ type: 'offshore safety course', expiry: '2027-01-01' }];
+  assert.deepEqual(evaluate(e, job, settingsWithMedical), { eligible: false, failedRule: 'cert-missing-or-expired', passportWarning: false });
+  // Adding the medical cert makes them eligible.
+  e.certs = [
+    { type: 'offshore safety course', expiry: '2027-01-01' },
+    { type: 'offshore medical certificate', expiry: '2027-01-01' },
+  ];
+  assert.deepEqual(evaluate(e, job, settingsWithMedical), { eligible: true, failedRule: null, passportWarning: false });
+});
+test('overlapping assignment yields double-booked failedRule', () => {
+  const e = baseEng();
+  // Assignment overlapping the job window (2026-08-01 to 2026-08-10).
+  e.assignments = [{ jobTitle: 'Other job', country: 'Norway', start: '2026-07-28', end: '2026-08-05' }];
+  assert.deepEqual(evaluate(e, baseJob, settings), { eligible: false, failedRule: 'double-booked', passportWarning: false });
+});
+test('non-overlapping assignment does not block eligibility', () => {
+  const e = baseEng();
+  // Assignment ends before job starts.
+  e.assignments = [{ jobTitle: 'Other job', country: 'Norway', start: '2026-07-01', end: '2026-07-31' }];
+  assert.deepEqual(evaluate(e, baseJob, settings), { eligible: true, failedRule: null, passportWarning: false });
 });
