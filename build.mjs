@@ -13,7 +13,7 @@ const css = await read('style.css');
 let scripts = '';
 for (const f of order) scripts += `\n/* ${f} */\n` + await read(f);
 
-const csp = "default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'";
+const csp = "default-src 'self'; connect-src 'none'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'";
 let html = await read('index.html');
 // remove external link + script tags, inject inline style + one inline script + CSP meta
 html = html.replace('<link rel="stylesheet" href="style.css">',
@@ -25,7 +25,8 @@ await mkdir(new URL('dist/', root), { recursive: true });
 await writeFile(new URL('dist/index.html', root), html);
 await writeFile(new URL('dist/_headers', root), await read('_headers'));
 
-// guard: no external references survived
-if (/\bsrc="|href="(?!#)/.test(html.replace(/href="#"/g, ''))) throw new Error('external reference left in dist');
-if (/https?:\/\//.test(html)) console.warn('warning: an http(s) URL appears in dist, check it is not a network dependency');
+// guard: code must be inlined (no external <script src> or stylesheet <link>). External
+// images and anchor links are allowed (e.g. the Stormberry app-switcher carousel and footer links).
+if (/<script\b[^>]*\bsrc=/i.test(html)) throw new Error('external <script src> left in dist');
+if (/<link\b[^>]*rel=["']?stylesheet/i.test(html)) throw new Error('external stylesheet link left in dist');
 console.log('dist/index.html written, bytes:', html.length);

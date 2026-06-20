@@ -48,3 +48,246 @@ ul { margin:.3rem 0; padding-left:1.2rem; }
 .edit-actions { display:flex; gap:.5rem; margin-top:1rem; }
 .btn-remove { background:#e9edf2; color:var(--ink); padding:.3rem .65rem; font-size:.85rem; }
 .roster-header { margin-bottom:.75rem; }
+
+/* =============================================================
+   STORMBERRY CHROME — header hero, app-switcher carousel, footer
+   CSS variables used here are self-contained; they do not depend
+   on the scheduler's light-theme :root variables above.
+   ============================================================= */
+
+/* Chrome colour tokens (dark chrome over light app body) */
+.site-header,
+.app-switcher-container,
+.site-footer {
+  --chrome-bg-base:      #040608;
+  --chrome-bg-card:      rgba(10, 16, 28, 0.72);
+  --chrome-bg-card-hover: rgba(16, 24, 40, 0.85);
+  --chrome-accent-blue:  #82aaff;
+  --chrome-text-primary: #f0f4ff;
+  --chrome-text-secondary: #8a9bca;
+  --chrome-text-muted:   #4a5580;
+  --chrome-border:       rgba(255, 255, 255, 0.08);
+  --chrome-grad-primary: linear-gradient(135deg, #82aaff 0%, #a282ff 100%);
+}
+
+/* ---- Header hero ---- */
+.site-header {
+  position: relative;
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+  background: #040608;
+  z-index: 10;
+}
+
+.header-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 70% at 50% 30%, rgba(130,170,255,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.header-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sched-icon {
+  width: 80px;
+  height: 80px;
+  filter: drop-shadow(0 0 18px rgba(130,170,255,0.3));
+  color: #fff;
+}
+
+.header-text h1 {
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  background: var(--chrome-grad-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: .01em;
+  margin: 0;
+}
+
+/* Override the existing h1::before bullet that would show inside the hero */
+.site-header h1::before { display: none; }
+
+.tagline {
+  color: var(--chrome-text-secondary);
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 0.25rem;
+}
+
+/* ---- App-switcher carousel ---- */
+.app-switcher-container {
+  padding: 3rem 0;
+  text-align: center;
+  margin-top: 2rem;
+  background: var(--chrome-bg-base);
+  border-top: 1px solid var(--chrome-border);
+}
+
+.switcher-title {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  color: var(--chrome-text-secondary);
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.app-switcher-marquee {
+  display: flex;
+  overflow: hidden;
+  padding-bottom: 1rem;
+  width: 100%;
+}
+
+.app-switcher-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+}
+
+.app-switcher-marquee:hover .app-switcher-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+.switcher-card {
+  background: var(--chrome-bg-card);
+  border: 1px solid var(--chrome-border);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--chrome-text-primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: 1rem;
+}
+
+.switcher-card:hover {
+  transform: translateY(-3px);
+  background: var(--chrome-bg-card-hover);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+}
+
+/* Inline-style stripped from StarMap — applied via class rule instead */
+.switcher-card img {
+  width: 32px;
+  height: 32px;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .app-switcher-marquee {
+    padding: 0.5rem 1rem 1.5rem 1rem;
+  }
+}
+
+/* ---- Footer ---- */
+.site-footer {
+  background: var(--chrome-bg-base);
+  border-top: 1px solid var(--chrome-border);
+  padding: 4rem 1.5rem 2rem;
+  margin-top: auto;
+  color: var(--chrome-text-primary);
+}
+
+.footer-inner {
+  max-width: 680px;
+  margin: 0 auto 3rem;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.footer-logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--chrome-text-primary);
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
+.footer-dot {
+  background: linear-gradient(135deg, #E21E26, #FF4D54);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.footer-tagline {
+  color: var(--chrome-text-secondary);
+  font-size: 0.95rem;
+}
+
+.footer-powered p {
+  color: var(--chrome-text-secondary);
+  font-size: 0.88rem;
+  text-align: right;
+}
+
+.footer-powered a {
+  color: var(--chrome-accent-blue);
+  text-decoration: none;
+}
+
+.footer-bottom {
+  border-top: 1px solid var(--chrome-border);
+  padding-top: 2rem;
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+  color: var(--chrome-text-muted);
+  font-size: 0.85rem;
+}
+
+.footer-bottom p { margin: 0; }
+
+.footer-bottom a {
+  color: var(--chrome-text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.footer-bottom a:hover { color: var(--chrome-accent-blue); }
+
+.footer-social {
+  display: flex;
+  gap: 1rem;
+}
+
+.footer-social a {
+  color: var(--chrome-text-secondary);
+  transition: color 0.15s;
+}
+
+.footer-social a:hover { color: var(--chrome-accent-blue); }
+
+.footer-privacy { color: var(--chrome-text-muted); }
+
+.footer-ai { color: var(--chrome-text-muted); }
+
