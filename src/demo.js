@@ -52,6 +52,15 @@
     specialties.forEach((c) => { lvl[c.equipment + '|' + c.repairType] = c.level; });
     return EQUIP.flatMap((eq) => REPAIRS.map((rep) => comp(eq, rep, lvl[eq + '|' + rep] || 1)));
   };
+  // Collapse visas with the same country and type, keeping the one with the latest expiry.
+  const dedupeVisas = (visas) => {
+    const seen = new Map();
+    for (const v of (visas || [])) {
+      const k = v.country + '|' + v.type;
+      if (!seen.has(k) || v.expiry > seen.get(k).expiry) seen.set(k, v);
+    }
+    return [...seen.values()];
+  };
 
   // Two double-booked engineers: overlapping the default crane job (2026-08-01, 10 days).
   const doubleBookAssignment = { jobTitle: 'Crane overhaul', country: 'United Kingdom', start: '2026-07-28', end: '2026-08-10' };
@@ -146,6 +155,6 @@
       competence:[comp('offshore crane','preventive (scheduled) service',1), comp('lifeboat/davit system','corrective (breakdown) repair',2)],
       availability:{ lastOffshore:null, restDaysOverride:null, vacations:[] },
       assignments: [] },
-  ].map((e) => ({ ...e, competence: broadComp(e.competence) })));
+  ].map((e) => ({ ...e, competence: broadComp(e.competence), visas: dedupeVisas(e.visas) })));
   SB.demo = { settings, engineers };
 })();
