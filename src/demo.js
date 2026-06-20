@@ -61,6 +61,17 @@
     }
     return [...seen.values()];
   };
+  // Ensure every engineer holds a valid offshore safety course and offshore medical certificate
+  // (add if missing, refresh if already expired) so an offshore job is never blocked on those.
+  const ensureOffshoreCerts = (certs) => {
+    const out = [...(certs || [])];
+    for (const t of ['offshore safety course', 'offshore medical certificate']) {
+      const c = out.find((x) => x.type === t);
+      if (!c) out.push({ type: t, expiry: '2030-06-01' });
+      else if (c.expiry < '2026-09-01') c.expiry = '2030-06-01';
+    }
+    return out;
+  };
 
   // Two double-booked engineers: overlapping the default crane job (2026-08-01, 10 days).
   const doubleBookAssignment = { jobTitle: 'Crane overhaul', country: 'United Kingdom', start: '2026-07-28', end: '2026-08-10' };
@@ -155,6 +166,6 @@
       competence:[comp('offshore crane','preventive (scheduled) service',1), comp('lifeboat/davit system','corrective (breakdown) repair',2)],
       availability:{ lastOffshore:null, restDaysOverride:null, vacations:[] },
       assignments: [] },
-  ].map((e) => ({ ...e, competence: broadComp(e.competence), visas: dedupeVisas(e.visas) })));
+  ].map((e) => ({ ...e, competence: broadComp(e.competence), visas: dedupeVisas(e.visas), certs: ensureOffshoreCerts(e.certs) })));
   SB.demo = { settings, engineers };
 })();
