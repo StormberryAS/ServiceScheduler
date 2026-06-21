@@ -3,10 +3,433 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; img-src 'self' data: https:; script-src 'self'; style-src 'self'">
-  <title>ServiceScheduler | Organise your team's schedule</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="style.css">
+<title>ServiceScheduler | Organise your team's schedule</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJTZXJ2aWNlIFNjaGVkdWxlciI+CiAgPHJlY3QgeD0iNiIgeT0iNiIgd2lkdGg9IjUyIiBoZWlnaHQ9IjUyIiByeD0iMTEiIGZpbGw9IiMwYjBmMTQiLz4KICA8cmVjdCB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzNCIgaGVpZ2h0PSI3IiByeD0iMy41IiBmaWxsPSIjZTg0MTNhIi8+CiAgPHJlY3QgeD0iMTUiIHk9IjI5IiB3aWR0aD0iMzQiIGhlaWdodD0iNSIgcng9IjIuNSIgZmlsbD0iI2U3ZWVmNiIvPgogIDxyZWN0IHg9IjE1IiB5PSI0MCIgd2lkdGg9IjIyIiBoZWlnaHQ9IjUiIHJ4PSIyLjUiIGZpbGw9IiM4YWEwYjQiLz4KICA8Y2lyY2xlIGN4PSI0NCIgY3k9IjQyLjUiIHI9IjQuNSIgZmlsbD0iI2U4NDEzYSIvPgo8L3N2Zz4K">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+  <style>
+:root {
+  --bg:#f5f7fa; --panel:#ffffff; --ink:#1a2230; --muted:#5b6b7b;
+  --accent:#e8413a; --ok:#1f9d57; --warn:#b8761a; --line:#dde3ea; --field:#fbfcfe;
+}
+* { box-sizing: border-box; }
+body { margin:0; font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); }
+/* The page header is the hero, styled under .site-header in the chrome section below. */
+h1 { font-size:1.2rem; margin:0; letter-spacing:.01em; }
+h1::before { content:""; display:inline-block; width:.6rem; height:.6rem; border-radius:50%; background:var(--accent); margin-right:.5rem; vertical-align:middle; }
+.muted { color:var(--muted); } .error { color:var(--accent); }
+.card { max-width:560px; margin:2.5rem auto; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:1.5rem; box-shadow:0 1px 3px rgba(20,30,50,.06); }
+.card h2,.card h3 { margin-top:0; }
+.card > label { display:block; width:100%; margin:.6rem 0 .15rem; font-size:.9rem; color:var(--muted); }
+.card input[type="file"], .card input[type="password"], .card input[type="date"], .card input[type="number"], .card input[type="text"], .card input[type="email"], .card input[type="tel"], .card select, .card textarea {
+  display:block; width:100%; margin:.15rem 0 .4rem; padding:.55rem .6rem; background:var(--field); color:var(--ink); border:1px solid var(--line); border-radius:8px; font:inherit;
+}
+label.inline { display:inline-flex; align-items:center; gap:.4rem; width:auto; margin:.25rem 1rem .25rem 0; color:var(--ink); }
+.card input[type="checkbox"] { width:auto; display:inline-block; margin:0; vertical-align:middle; }
+.row { display:flex; gap:.75rem; margin-top:1rem; align-items:center; flex-wrap:wrap; }
+button { padding:.6rem 1rem; background:var(--accent); color:#fff; border:0; border-radius:8px; cursor:pointer; font:inherit; }
+button.secondary, #newBtn { background:#e9edf2; color:var(--ink); }
+button:hover { filter:brightness(.97); }
+nav { display:flex; gap:.5rem; padding:.6rem 1.5rem; background:var(--panel); border-bottom:1px solid var(--line); align-items:center; position:sticky; top:0; }
+nav .spacer { flex:1; }
+nav button { background:transparent; color:var(--muted); padding:.5rem .75rem; }
+nav button.active { color:var(--ink); border-bottom:2px solid var(--accent); border-radius:0; }
+.tab { padding:1.5rem; max-width:1100px; }
+.meter { height:8px; border-radius:6px; background:#e9edf2; margin:.25rem 0 .35rem; overflow:hidden; }
+.meter > span { display:block; height:100%; transition:width .15s; }
+.m-unprotected>span{width:8%;background:#9aa7b4} .m-weak>span{width:25%;background:var(--accent)}
+.m-medium>span{width:50%;background:var(--warn)} .m-strong>span{width:75%;background:#2f7fd0}
+.m-super-strong>span{width:100%;background:var(--ok)}
+.meter-label { font-size:.8rem; color:var(--muted); }
+table { width:100%; border-collapse:collapse; background:var(--panel); }
+th,td { text-align:left; padding:.55rem .6rem; border-bottom:1px solid var(--line); }
+th { color:var(--muted); font-weight:600; font-size:.85rem; }
+tbody tr:hover { background:#f3f6fa; }
+a { color:#2f6fd0; }
+.pill { font-size:.75rem; padding:.12rem .55rem; border-radius:999px; display:inline-block; }
+.pill.ot { background:#fbeede; color:#8a5a12; } .pill.ok { background:#e3f5ea; color:#1f7a45; }
+.excluded td { color:var(--muted); }
+.warn { background:#fbeede; color:#8a5a12; padding:.5rem .75rem; border-radius:8px; border:1px solid #f0d9b0; margin:.6rem 0; }
+.ok-note { color:#1f7a45; font-weight:600; margin:.4rem 0; }
+ul { margin:.3rem 0; padding-left:1.2rem; }
+.save-panel { max-width:480px; margin:1rem auto; }
+.edit-section { margin:1rem 0; }
+.edit-list { display:flex; flex-direction:column; gap:.4rem; margin:.4rem 0; }
+.edit-row { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+.edit-row span { flex:1; }
+.edit-actions { display:flex; gap:.5rem; margin-top:1rem; }
+.btn-remove { background:#e9edf2; color:var(--ink); padding:.3rem .65rem; font-size:.85rem; }
+.link-btn { background:transparent; color:#2f6fd0; padding:0; font:inherit; text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+.link-btn:hover { color:var(--accent); filter:none; }
+.conflict { color:var(--warn); font-size:.85rem; }
+.roster-header { margin-bottom:.75rem; }
+
+/* =============================================================
+   STORMBERRY CHROME — header hero, app-switcher carousel, footer
+   CSS variables used here are self-contained; they do not depend
+   on the scheduler's light-theme :root variables above.
+   ============================================================= */
+
+/* Chrome colour tokens (dark chrome over light app body) */
+.site-header,
+.app-switcher-container,
+.site-footer {
+  --chrome-bg-base:      #1b2430;
+  --chrome-bg-card:      rgba(28, 38, 55, 0.80);
+  --chrome-bg-card-hover: rgba(36, 48, 68, 0.90);
+  --chrome-accent-blue:  #82aaff;
+  --chrome-text-primary: #f0f4ff;
+  --chrome-text-secondary: #8a9bca;
+  --chrome-text-muted:   #5a6890;
+  --chrome-border:       rgba(255, 255, 255, 0.10);
+  --chrome-grad-primary: linear-gradient(135deg, #82aaff 0%, #a282ff 100%);
+}
+
+/* ---- Header hero ---- */
+.site-header {
+  position: relative;
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+  background: var(--chrome-bg-base);
+  z-index: 10;
+}
+
+.header-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 70% at 50% 30%, rgba(130,170,255,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.header-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1rem;
+}
+
+.sched-icon {
+  width: 80px;
+  height: 80px;
+  filter: drop-shadow(0 0 18px rgba(130,170,255,0.3));
+  color: #fff;
+}
+
+.sched-icon-img {
+  width: 52px;
+  height: 52px;
+  display: block;
+}
+
+.header-text h1 {
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  background: var(--chrome-grad-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: .01em;
+  margin: 0;
+}
+
+/* Override the existing h1::before bullet that would show inside the hero */
+.site-header h1::before { display: none; }
+
+.tagline {
+  color: var(--chrome-text-secondary);
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 0.25rem;
+}
+
+/* ---- App-switcher carousel ---- */
+.app-switcher-container {
+  padding: 3rem 0;
+  text-align: center;
+  margin-top: 2rem;
+  background: var(--chrome-bg-base);
+  border-top: 1px solid var(--chrome-border);
+}
+
+.switcher-title {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  color: var(--chrome-text-secondary);
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.app-switcher-marquee {
+  display: flex;
+  overflow: hidden;
+  padding-bottom: 1rem;
+  width: 100%;
+}
+
+.app-switcher-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+}
+
+.app-switcher-marquee:hover .app-switcher-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+.switcher-card {
+  background: var(--chrome-bg-card);
+  border: 1px solid var(--chrome-border);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--chrome-text-primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: 1rem;
+}
+
+.switcher-card:hover {
+  transform: translateY(-3px);
+  background: var(--chrome-bg-card-hover);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+}
+
+/* Inline-style stripped from StarMap — applied via class rule instead */
+.switcher-card img {
+  width: 32px;
+  height: 32px;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .app-switcher-marquee {
+    padding: 0.5rem 1rem 1.5rem 1rem;
+  }
+}
+
+/* ---- Footer ---- */
+.site-footer {
+  background: var(--chrome-bg-base);
+  border-top: 1px solid var(--chrome-border);
+  padding: 4rem 1.5rem 2rem;
+  margin-top: auto;
+  color: var(--chrome-text-primary);
+}
+
+.footer-inner {
+  max-width: 960px;
+  margin: 0 auto 3rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+.footer-brand { flex: 1 1 260px; min-width: 0; }
+
+.footer-powered {
+  flex: 1 1 260px;
+  min-width: 0;
+  text-align: right;
+}
+
+.footer-logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--chrome-text-primary);
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
+.footer-dot {
+  background: linear-gradient(135deg, #E21E26, #FF4D54);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.footer-tagline {
+  color: var(--chrome-text-secondary);
+  font-size: 0.95rem;
+}
+
+.footer-powered p {
+  color: var(--chrome-text-secondary);
+  font-size: 0.88rem;
+  text-align: right;
+}
+
+.footer-powered a {
+  color: var(--chrome-accent-blue);
+  text-decoration: none;
+}
+
+.footer-bottom {
+  border-top: 1px solid var(--chrome-border);
+  padding-top: 2rem;
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+  color: var(--chrome-text-muted);
+  font-size: 0.85rem;
+}
+
+.footer-bottom p { margin: 0; }
+
+.footer-bottom a {
+  color: var(--chrome-text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.footer-bottom a:hover { color: var(--chrome-accent-blue); }
+
+.footer-social {
+  display: flex;
+  gap: 1rem;
+}
+
+.footer-social a {
+  color: var(--chrome-text-secondary);
+  transition: color 0.15s;
+}
+
+.footer-social a:hover { color: var(--chrome-accent-blue); }
+
+.footer-privacy { color: var(--chrome-text-muted); }
+
+.footer-ai { color: var(--chrome-text-muted); }
+
+/* =============================================================
+   COMPLIANCE CALENDAR
+   ============================================================= */
+
+.cal-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  max-width: 600px;
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.cal-month-label {
+  font-weight: 700;
+  font-size: 1rem;
+  flex: 1;
+  text-align: center;
+}
+
+.cal-no-next {
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 1rem;
+}
+
+.cal-dow {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0.3rem 0;
+}
+
+.cal-day {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  min-height: 44px;
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: var(--field);
+}
+
+.cal-blank {
+  border-color: transparent;
+  background: transparent;
+}
+
+.cal-day-num {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.cal-day.has-event {
+  background: #e8f0ff;
+  border-color: #82aaff;
+  cursor: pointer;
+}
+
+.cal-day.has-event:hover {
+  background: #d5e5ff;
+}
+
+.cal-event-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2f6fd0;
+  display: block;
+}
+
+.cal-list-head {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.cal-event-row {
+  font-size: 0.88rem;
+  margin: 0.25rem 0;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  border-left: 3px solid var(--line);
+}
+
+.cal-event-row.cal-event-highlight {
+  background: #fff8e8;
+  border-left-color: var(--warn);
+}
+
+
+  </style>
 </head>
 <body>
 
@@ -18,7 +441,7 @@
     <div class="header-content">
       <!-- Schedule icon — same as favicon -->
       <div class="sched-icon" aria-hidden="true">
-        <img src="favicon.svg" alt="" class="sched-icon-img">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJTZXJ2aWNlIFNjaGVkdWxlciI+CiAgPHJlY3QgeD0iNiIgeT0iNiIgd2lkdGg9IjUyIiBoZWlnaHQ9IjUyIiByeD0iMTEiIGZpbGw9IiMwYjBmMTQiLz4KICA8cmVjdCB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzNCIgaGVpZ2h0PSI3IiByeD0iMy41IiBmaWxsPSIjZTg0MTNhIi8+CiAgPHJlY3QgeD0iMTUiIHk9IjI5IiB3aWR0aD0iMzQiIGhlaWdodD0iNSIgcng9IjIuNSIgZmlsbD0iI2U3ZWVmNiIvPgogIDxyZWN0IHg9IjE1IiB5PSI0MCIgd2lkdGg9IjIyIiBoZWlnaHQ9IjUiIHJ4PSIyLjUiIGZpbGw9IiM4YWEwYjQiLz4KICA8Y2lyY2xlIGN4PSI0NCIgY3k9IjQyLjUiIHI9IjQuNSIgZmlsbD0iI2U4NDEzYSIvPgo8L3N2Zz4K" alt="" class="sched-icon-img">
       </div>
 
       <div class="header-text">
@@ -67,33 +490,33 @@
       <h3 class="switcher-title">Explore the Stormberry Ecosystem</h3>
       <div class="app-switcher-marquee">
         <div class="app-switcher-track">
-          <a href="https://stormberry.as/labs.html" class="switcher-card"><img src="https://stormberry.as/labs-favicon.svg" alt="Labs"> <span>Stormberry Labs</span></a>
-          <a href="https://sun.stormberry.as" class="switcher-card"><img src="https://sun.stormberry.as/favicon.svg" alt="SunApp"> <span>SunApp</span></a>
-          <a href="https://moon.stormberry.as" class="switcher-card"><img src="https://moon.stormberry.as/favicon.svg" alt="MoonApp"> <span>MoonApp</span></a>
-          <a href="https://photo.stormberry.as" class="switcher-card"><img src="https://photo.stormberry.as/favicon.svg" alt="PhotoTimer"> <span>PhotoTimer</span></a>
-          <a href="https://garden.stormberry.as" class="switcher-card"><img src="https://garden.stormberry.as/favicon.svg" alt="LunarGarden"> <span>LunarGarden</span></a>
-          <a href="https://planet.stormberry.as" class="switcher-card"><img src="https://planet.stormberry.as/favicon.svg" alt="PlanetPulse"> <span>PlanetPulse</span></a>
-          <a href="https://astro.stormberry.as" class="switcher-card"><img src="https://astro.stormberry.as/favicon.svg" alt="AstroQuiz"> <span>AstroQuiz</span></a>
-          <a href="https://star.stormberry.as" class="switcher-card"><img src="https://star.stormberry.as/favicon.svg" alt="StarMap"> <span>StarMap</span></a>
-          <a href="https://scheduler.stormberry.as" class="switcher-card"><img src="favicon.svg" alt="ServiceScheduler"> <span>ServiceScheduler</span></a>
-          <a href="https://stormberry.as/labs.html" class="switcher-card"><img src="https://stormberry.as/labs-favicon.svg" alt="Labs"> <span>Stormberry Labs</span></a>
-          <a href="https://sun.stormberry.as" class="switcher-card"><img src="https://sun.stormberry.as/favicon.svg" alt="SunApp"> <span>SunApp</span></a>
-          <a href="https://moon.stormberry.as" class="switcher-card"><img src="https://moon.stormberry.as/favicon.svg" alt="MoonApp"> <span>MoonApp</span></a>
-          <a href="https://photo.stormberry.as" class="switcher-card"><img src="https://photo.stormberry.as/favicon.svg" alt="PhotoTimer"> <span>PhotoTimer</span></a>
-          <a href="https://garden.stormberry.as" class="switcher-card"><img src="https://garden.stormberry.as/favicon.svg" alt="LunarGarden"> <span>LunarGarden</span></a>
-          <a href="https://planet.stormberry.as" class="switcher-card"><img src="https://planet.stormberry.as/favicon.svg" alt="PlanetPulse"> <span>PlanetPulse</span></a>
-          <a href="https://astro.stormberry.as" class="switcher-card"><img src="https://astro.stormberry.as/favicon.svg" alt="AstroQuiz"> <span>AstroQuiz</span></a>
-          <a href="https://star.stormberry.as" class="switcher-card"><img src="https://star.stormberry.as/favicon.svg" alt="StarMap"> <span>StarMap</span></a>
-          <a href="https://scheduler.stormberry.as" class="switcher-card"><img src="favicon.svg" alt="ServiceScheduler"> <span>ServiceScheduler</span></a>
-          <a href="https://stormberry.as/labs.html" class="switcher-card"><img src="https://stormberry.as/labs-favicon.svg" alt="Labs"> <span>Stormberry Labs</span></a>
-          <a href="https://sun.stormberry.as" class="switcher-card"><img src="https://sun.stormberry.as/favicon.svg" alt="SunApp"> <span>SunApp</span></a>
-          <a href="https://moon.stormberry.as" class="switcher-card"><img src="https://moon.stormberry.as/favicon.svg" alt="MoonApp"> <span>MoonApp</span></a>
-          <a href="https://photo.stormberry.as" class="switcher-card"><img src="https://photo.stormberry.as/favicon.svg" alt="PhotoTimer"> <span>PhotoTimer</span></a>
-          <a href="https://garden.stormberry.as" class="switcher-card"><img src="https://garden.stormberry.as/favicon.svg" alt="LunarGarden"> <span>LunarGarden</span></a>
-          <a href="https://planet.stormberry.as" class="switcher-card"><img src="https://planet.stormberry.as/favicon.svg" alt="PlanetPulse"> <span>PlanetPulse</span></a>
-          <a href="https://astro.stormberry.as" class="switcher-card"><img src="https://astro.stormberry.as/favicon.svg" alt="AstroQuiz"> <span>AstroQuiz</span></a>
-          <a href="https://star.stormberry.as" class="switcher-card"><img src="https://star.stormberry.as/favicon.svg" alt="StarMap"> <span>StarMap</span></a>
-          <a href="https://scheduler.stormberry.as" class="switcher-card"><img src="favicon.svg" alt="ServiceScheduler"> <span>ServiceScheduler</span></a>
+          <a href="https://stormberry.as/labs.html" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNFMjFFMjYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8cGF0aCBkPSJNMTAgMnY3LjMxIi8+CiAgPHBhdGggZD0iTTE0IDkuM1YxLjk5Ii8+CiAgPHBhdGggZD0iTTguNSAyaDciLz4KICA8cGF0aCBkPSJNMTQgOS4zYTYuNSA2LjUgMCAxIDEtNCAwIi8+CiAgPGxpbmUgeDE9IjUuNTIiIHgyPSIxOC40OCIgeTE9IjE2IiB5Mj0iMTYiLz4KPC9zdmc+Cg==" alt="Labs"> <span>Stormberry Labs</span></a>
+          <a href="https://sun.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMTQiIGZpbGw9InVybCgjc3VuR3JhZCkiIC8+CiAgPGcgc3Ryb2tlPSJ1cmwoI3JheUdyYWQpIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+CiAgICA8bGluZSB4MT0iMzIiIHkxPSI0IiAgeDI9IjMyIiB5Mj0iMTIiLz4KICAgIDxsaW5lIHgxPSIzMiIgeTE9IjUyIiB4Mj0iMzIiIHkyPSI2MCIvPgogICAgPGxpbmUgeDE9IjQiICB5MT0iMzIiIHgyPSIxMiIgeTI9IjMyIi8+CiAgICA8bGluZSB4MT0iNTIiIHkxPSIzMiIgeDI9IjYwIiB5Mj0iMzIiLz4KICAgIDxsaW5lIHgxPSIxMS41IiB5MT0iMTEuNSIgeDI9IjE3LjYiIHkyPSIxNy42Ii8+CiAgICA8bGluZSB4MT0iNDYuNCIgeTE9IjQ2LjQiIHgyPSI1Mi41IiB5Mj0iNTIuNSIvPgogICAgPGxpbmUgeDE9IjUyLjUiIHkxPSIxMS41IiB4Mj0iNDYuNCIgeTI9IjE3LjYiLz4KICAgIDxsaW5lIHgxPSIxNy42IiB5MT0iNDYuNCIgeDI9IjExLjUiIHkyPSI1Mi41Ii8+CiAgPC9nPgogIDxkZWZzPgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJzdW5HcmFkIiBjeD0iNDAlIiBjeT0iMzUlIiByPSI2NSUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiAgIHN0b3AtY29sb3I9IiNmZmY3YTEiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI2MCUiICBzdG9wLWNvbG9yPSIjZmZiMzQ3Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZmNmIzNSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icmF5R3JhZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiAgIHN0b3AtY29sb3I9IiNmZmQ3MDAiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjZmY4YzQyIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KPC9zdmc+Cg==" alt="SunApp"> <span>SunApp</span></a>
+          <a href="https://moon.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjYiIGZpbGw9InVybCgjbW9vbkdyYWQpIiAvPgogIDxlbGxpcHNlIGN4PSI0MCIgY3k9IjMyIiByeD0iMjIiIHJ5PSIyNiIgZmlsbD0idXJsKCNzaGFkb3dHcmFkKSIgLz4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibW9vbkdyYWQiIGN4PSIzOCUiIGN5PSIzNSUiIHI9IjcwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiICAgc3RvcC1jb2xvcj0iI2YwZjRmZiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgIHN0b3AtY29sb3I9IiNjOGQ4ZjAiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjN2I5ZmQ0Ii8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJzaGFkb3dHcmFkIiBjeD0iMzAlIiBjeT0iNDAlIiByPSI2MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiAgIHN0b3AtY29sb3I9IiMwOTBkMWUiIHN0b3Atb3BhY2l0eT0iMC45NSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwYTEwMjAiIHN0b3Atb3BhY2l0eT0iMC44NSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+Cjwvc3ZnPgo=" alt="MoonApp"> <span>MoonApp</span></a>
+          <a href="https://photo.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjYiIHN0cm9rZT0idXJsKCNicmFuZEdyYWQpIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyMCIgc3Ryb2tlPSJ1cmwoI2dyYWRBY2NlbnQpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuNSIgLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIxMiIgZmlsbD0idXJsKCNicmFuZEdyYWQpIiAvPgogIDxnIHN0cm9rZT0iIzFhMGEyZSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiPgogICAgPGxpbmUgeDE9IjIyIiB5MT0iMjAiIHgyPSIzOCIgeTI9IjI2IiAvPgogICAgPGxpbmUgeDE9IjQ0IiB5MT0iMjIiIHgyPSIzOCIgeTI9IjM4IiAvPgogICAgPGxpbmUgeDE9IjQyIiB5MT0iNDQiIHgyPSIyNiIgeTI9IjM4IiAvPgogICAgPGxpbmUgeDE9IjIwIiB5MT0iNDIiIHgyPSIyNiIgeTI9IjI2IiAvPgogIDwvZz4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYnJhbmRHcmFkIiB4MT0iMCIgeTE9IjAiIHgyPSI2NCIgeTI9IjY0Ij4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI0ZGRDcwMCIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI1MCUiIHN0b3AtY29sb3I9IiNGRjhDNDIiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzlkNGVkZCIgLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWRBY2NlbnQiIHgxPSIwIiB5MT0iNjQiIHgyPSI2NCIgeTI9IjAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZTBhYWZmIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmZjllMDAiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KPC9zdmc+Cg==" alt="PhotoTimer"> <span>PhotoTimer</span></a>
+          <a href="https://garden.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdhcmRlbkdyYWQiIHgxPSIwIiB5MT0iMjQiIHgyPSIyNCIgeTI9IjAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjNENBRjUwIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM4MUM3ODQiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8IS0tIERhcmsgYmFja2dyb3VuZCBzcXVpcmNsZSBtYXRjaGluZyBTdG9ybWJlcnJ5IHN0eWxlIC0tPgogIDxyZWN0IHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgcng9IjYiIGZpbGw9IiMwODBjMTgiIC8+CiAgPHBhdGggZD0iTTEyIDE5VjEwTTEyIDEwQzEyIDcuNSAxNCA1IDE3LjUgNEMxNy41IDggMTQuNSAxMCAxMiAxMFpNMTIgMTBDMTIgOCAxMC41IDYuNSA3LjUgNkM3LjUgOS41IDkuNSAxMCAxMiAxMFoiIHN0cm9rZT0idXJsKCNnYXJkZW5HcmFkKSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K" alt="LunarGarden"> <span>LunarGarden</span></a>
+          <a href="https://planet.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InBsYW5ldEdyYWQiIHgxPSIwIiB5MT0iMjQiIHgyPSIyNCIgeTI9IjAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjOWQ0ZWRkIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNlMGFhZmYiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHJ4PSI2IiBmaWxsPSIjMDgwYzE4IiAvPgogIDxwYXRoIGQ9Ik00IDE3QzMuNSAxNyAyIDE2LjUgMiAxNUMyIDExIDEwIDcgMjAgOEMyMSA4IDIyIDguNSAyMiAxMEMyMiAxMyAxMCAxNiA0IDE3WiIgc3Ryb2tlPSJ1cmwoI3BsYW5ldEdyYWQpIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNSIgZmlsbD0iIzA4MGMxOCIgc3Ryb2tlPSJ1cmwoI3BsYW5ldEdyYWQpIiBzdHJva2Utd2lkdGg9IjEuNSIvPgo8L3N2Zz4K" alt="PlanetPulse"> <span>PlanetPulse</span></a>
+          <a href="https://astro.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjgiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjQpIi8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjAiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjQpIi8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMTIiIGZpbGw9IiNmZmRkYWEiLz4KICA8Y2lyY2xlIGN4PSIxNCIgY3k9IjE0IiByPSIzIiBmaWxsPSIjYTBjMGZmIi8+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNCIgZmlsbD0iI2ZmYzBhMCIvPgo8L3N2Zz4K" alt="AstroQuiz"> <span>AstroQuiz</span></a>
+          <a href="https://star.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjMyIiBmaWxsPSIjMDgwYzE0Ii8+CiAgPGNpcmNsZSBjeD0iMjAiIGN5PSI0MCIgcj0iNCIgZmlsbD0iI2ZmZiIvPgogIDxjaXJjbGUgY3g9IjQ0IiBjeT0iNDgiIHI9IjMiIGZpbGw9IiNmZmYiLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjI0IiByPSI1IiBmaWxsPSJ1cmwoI3N0YXJHcmFkKSIvPgogIDxjaXJjbGUgY3g9IjUyIiBjeT0iMTgiIHI9IjMiIGZpbGw9IiNmZmYiLz4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjE2IiByPSIyIiBmaWxsPSIjZmZmIi8+CiAgCiAgPGxpbmUgeDE9IjIwIiB5MT0iNDAiIHgyPSIzMiIgeTI9IjI0IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgPGxpbmUgeDE9IjMyIiB5MT0iMjQiIHgyPSI0NCIgeTI9IjQ4IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgPGxpbmUgeDE9IjMyIiB5MT0iMjQiIHgyPSI1MiIgeTI9IjE4IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgPGxpbmUgeDE9IjEyIiB5MT0iMTYiIHgyPSIzMiIgeTI9IjI0IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgCiAgPGRlZnM+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9InN0YXJHcmFkIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI1MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmZmIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2EwYzBmZiIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibGluZUdyYWQiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0icmdiYSgyNTUsMjU1LDI1NSwwLjYpIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0icmdiYSgyNTUsMjU1LDI1NSwwLjIpIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KPC9zdmc+Cg==" alt="StarMap"> <span>StarMap</span></a>
+          <a href="https://scheduler.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJTZXJ2aWNlIFNjaGVkdWxlciI+CiAgPHJlY3QgeD0iNiIgeT0iNiIgd2lkdGg9IjUyIiBoZWlnaHQ9IjUyIiByeD0iMTEiIGZpbGw9IiMwYjBmMTQiLz4KICA8cmVjdCB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzNCIgaGVpZ2h0PSI3IiByeD0iMy41IiBmaWxsPSIjZTg0MTNhIi8+CiAgPHJlY3QgeD0iMTUiIHk9IjI5IiB3aWR0aD0iMzQiIGhlaWdodD0iNSIgcng9IjIuNSIgZmlsbD0iI2U3ZWVmNiIvPgogIDxyZWN0IHg9IjE1IiB5PSI0MCIgd2lkdGg9IjIyIiBoZWlnaHQ9IjUiIHJ4PSIyLjUiIGZpbGw9IiM4YWEwYjQiLz4KICA8Y2lyY2xlIGN4PSI0NCIgY3k9IjQyLjUiIHI9IjQuNSIgZmlsbD0iI2U4NDEzYSIvPgo8L3N2Zz4K" alt="ServiceScheduler"> <span>ServiceScheduler</span></a>
+          <a href="https://stormberry.as/labs.html" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNFMjFFMjYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8cGF0aCBkPSJNMTAgMnY3LjMxIi8+CiAgPHBhdGggZD0iTTE0IDkuM1YxLjk5Ii8+CiAgPHBhdGggZD0iTTguNSAyaDciLz4KICA8cGF0aCBkPSJNMTQgOS4zYTYuNSA2LjUgMCAxIDEtNCAwIi8+CiAgPGxpbmUgeDE9IjUuNTIiIHgyPSIxOC40OCIgeTE9IjE2IiB5Mj0iMTYiLz4KPC9zdmc+Cg==" alt="Labs"> <span>Stormberry Labs</span></a>
+          <a href="https://sun.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMTQiIGZpbGw9InVybCgjc3VuR3JhZCkiIC8+CiAgPGcgc3Ryb2tlPSJ1cmwoI3JheUdyYWQpIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+CiAgICA8bGluZSB4MT0iMzIiIHkxPSI0IiAgeDI9IjMyIiB5Mj0iMTIiLz4KICAgIDxsaW5lIHgxPSIzMiIgeTE9IjUyIiB4Mj0iMzIiIHkyPSI2MCIvPgogICAgPGxpbmUgeDE9IjQiICB5MT0iMzIiIHgyPSIxMiIgeTI9IjMyIi8+CiAgICA8bGluZSB4MT0iNTIiIHkxPSIzMiIgeDI9IjYwIiB5Mj0iMzIiLz4KICAgIDxsaW5lIHgxPSIxMS41IiB5MT0iMTEuNSIgeDI9IjE3LjYiIHkyPSIxNy42Ii8+CiAgICA8bGluZSB4MT0iNDYuNCIgeTE9IjQ2LjQiIHgyPSI1Mi41IiB5Mj0iNTIuNSIvPgogICAgPGxpbmUgeDE9IjUyLjUiIHkxPSIxMS41IiB4Mj0iNDYuNCIgeTI9IjE3LjYiLz4KICAgIDxsaW5lIHgxPSIxNy42IiB5MT0iNDYuNCIgeDI9IjExLjUiIHkyPSI1Mi41Ii8+CiAgPC9nPgogIDxkZWZzPgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJzdW5HcmFkIiBjeD0iNDAlIiBjeT0iMzUlIiByPSI2NSUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiAgIHN0b3AtY29sb3I9IiNmZmY3YTEiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI2MCUiICBzdG9wLWNvbG9yPSIjZmZiMzQ3Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZmNmIzNSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icmF5R3JhZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiAgIHN0b3AtY29sb3I9IiNmZmQ3MDAiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjZmY4YzQyIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KPC9zdmc+Cg==" alt="SunApp"> <span>SunApp</span></a>
+          <a href="https://moon.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjYiIGZpbGw9InVybCgjbW9vbkdyYWQpIiAvPgogIDxlbGxpcHNlIGN4PSI0MCIgY3k9IjMyIiByeD0iMjIiIHJ5PSIyNiIgZmlsbD0idXJsKCNzaGFkb3dHcmFkKSIgLz4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibW9vbkdyYWQiIGN4PSIzOCUiIGN5PSIzNSUiIHI9IjcwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiICAgc3RvcC1jb2xvcj0iI2YwZjRmZiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgIHN0b3AtY29sb3I9IiNjOGQ4ZjAiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjN2I5ZmQ0Ii8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJzaGFkb3dHcmFkIiBjeD0iMzAlIiBjeT0iNDAlIiByPSI2MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiAgIHN0b3AtY29sb3I9IiMwOTBkMWUiIHN0b3Atb3BhY2l0eT0iMC45NSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwYTEwMjAiIHN0b3Atb3BhY2l0eT0iMC44NSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+Cjwvc3ZnPgo=" alt="MoonApp"> <span>MoonApp</span></a>
+          <a href="https://photo.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjYiIHN0cm9rZT0idXJsKCNicmFuZEdyYWQpIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyMCIgc3Ryb2tlPSJ1cmwoI2dyYWRBY2NlbnQpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuNSIgLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIxMiIgZmlsbD0idXJsKCNicmFuZEdyYWQpIiAvPgogIDxnIHN0cm9rZT0iIzFhMGEyZSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiPgogICAgPGxpbmUgeDE9IjIyIiB5MT0iMjAiIHgyPSIzOCIgeTI9IjI2IiAvPgogICAgPGxpbmUgeDE9IjQ0IiB5MT0iMjIiIHgyPSIzOCIgeTI9IjM4IiAvPgogICAgPGxpbmUgeDE9IjQyIiB5MT0iNDQiIHgyPSIyNiIgeTI9IjM4IiAvPgogICAgPGxpbmUgeDE9IjIwIiB5MT0iNDIiIHgyPSIyNiIgeTI9IjI2IiAvPgogIDwvZz4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYnJhbmRHcmFkIiB4MT0iMCIgeTE9IjAiIHgyPSI2NCIgeTI9IjY0Ij4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI0ZGRDcwMCIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI1MCUiIHN0b3AtY29sb3I9IiNGRjhDNDIiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzlkNGVkZCIgLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWRBY2NlbnQiIHgxPSIwIiB5MT0iNjQiIHgyPSI2NCIgeTI9IjAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZTBhYWZmIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmZjllMDAiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KPC9zdmc+Cg==" alt="PhotoTimer"> <span>PhotoTimer</span></a>
+          <a href="https://garden.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdhcmRlbkdyYWQiIHgxPSIwIiB5MT0iMjQiIHgyPSIyNCIgeTI9IjAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjNENBRjUwIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM4MUM3ODQiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8IS0tIERhcmsgYmFja2dyb3VuZCBzcXVpcmNsZSBtYXRjaGluZyBTdG9ybWJlcnJ5IHN0eWxlIC0tPgogIDxyZWN0IHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgcng9IjYiIGZpbGw9IiMwODBjMTgiIC8+CiAgPHBhdGggZD0iTTEyIDE5VjEwTTEyIDEwQzEyIDcuNSAxNCA1IDE3LjUgNEMxNy41IDggMTQuNSAxMCAxMiAxMFpNMTIgMTBDMTIgOCAxMC41IDYuNSA3LjUgNkM3LjUgOS41IDkuNSAxMCAxMiAxMFoiIHN0cm9rZT0idXJsKCNnYXJkZW5HcmFkKSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K" alt="LunarGarden"> <span>LunarGarden</span></a>
+          <a href="https://planet.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InBsYW5ldEdyYWQiIHgxPSIwIiB5MT0iMjQiIHgyPSIyNCIgeTI9IjAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjOWQ0ZWRkIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNlMGFhZmYiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHJ4PSI2IiBmaWxsPSIjMDgwYzE4IiAvPgogIDxwYXRoIGQ9Ik00IDE3QzMuNSAxNyAyIDE2LjUgMiAxNUMyIDExIDEwIDcgMjAgOEMyMSA4IDIyIDguNSAyMiAxMEMyMiAxMyAxMCAxNiA0IDE3WiIgc3Ryb2tlPSJ1cmwoI3BsYW5ldEdyYWQpIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNSIgZmlsbD0iIzA4MGMxOCIgc3Ryb2tlPSJ1cmwoI3BsYW5ldEdyYWQpIiBzdHJva2Utd2lkdGg9IjEuNSIvPgo8L3N2Zz4K" alt="PlanetPulse"> <span>PlanetPulse</span></a>
+          <a href="https://astro.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjgiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjQpIi8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjAiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjQpIi8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMTIiIGZpbGw9IiNmZmRkYWEiLz4KICA8Y2lyY2xlIGN4PSIxNCIgY3k9IjE0IiByPSIzIiBmaWxsPSIjYTBjMGZmIi8+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNCIgZmlsbD0iI2ZmYzBhMCIvPgo8L3N2Zz4K" alt="AstroQuiz"> <span>AstroQuiz</span></a>
+          <a href="https://star.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjMyIiBmaWxsPSIjMDgwYzE0Ii8+CiAgPGNpcmNsZSBjeD0iMjAiIGN5PSI0MCIgcj0iNCIgZmlsbD0iI2ZmZiIvPgogIDxjaXJjbGUgY3g9IjQ0IiBjeT0iNDgiIHI9IjMiIGZpbGw9IiNmZmYiLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjI0IiByPSI1IiBmaWxsPSJ1cmwoI3N0YXJHcmFkKSIvPgogIDxjaXJjbGUgY3g9IjUyIiBjeT0iMTgiIHI9IjMiIGZpbGw9IiNmZmYiLz4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjE2IiByPSIyIiBmaWxsPSIjZmZmIi8+CiAgCiAgPGxpbmUgeDE9IjIwIiB5MT0iNDAiIHgyPSIzMiIgeTI9IjI0IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgPGxpbmUgeDE9IjMyIiB5MT0iMjQiIHgyPSI0NCIgeTI9IjQ4IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgPGxpbmUgeDE9IjMyIiB5MT0iMjQiIHgyPSI1MiIgeTI9IjE4IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgPGxpbmUgeDE9IjEyIiB5MT0iMTYiIHgyPSIzMiIgeTI9IjI0IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgCiAgPGRlZnM+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9InN0YXJHcmFkIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI1MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmZmIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2EwYzBmZiIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibGluZUdyYWQiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0icmdiYSgyNTUsMjU1LDI1NSwwLjYpIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0icmdiYSgyNTUsMjU1LDI1NSwwLjIpIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KPC9zdmc+Cg==" alt="StarMap"> <span>StarMap</span></a>
+          <a href="https://scheduler.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJTZXJ2aWNlIFNjaGVkdWxlciI+CiAgPHJlY3QgeD0iNiIgeT0iNiIgd2lkdGg9IjUyIiBoZWlnaHQ9IjUyIiByeD0iMTEiIGZpbGw9IiMwYjBmMTQiLz4KICA8cmVjdCB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzNCIgaGVpZ2h0PSI3IiByeD0iMy41IiBmaWxsPSIjZTg0MTNhIi8+CiAgPHJlY3QgeD0iMTUiIHk9IjI5IiB3aWR0aD0iMzQiIGhlaWdodD0iNSIgcng9IjIuNSIgZmlsbD0iI2U3ZWVmNiIvPgogIDxyZWN0IHg9IjE1IiB5PSI0MCIgd2lkdGg9IjIyIiBoZWlnaHQ9IjUiIHJ4PSIyLjUiIGZpbGw9IiM4YWEwYjQiLz4KICA8Y2lyY2xlIGN4PSI0NCIgY3k9IjQyLjUiIHI9IjQuNSIgZmlsbD0iI2U4NDEzYSIvPgo8L3N2Zz4K" alt="ServiceScheduler"> <span>ServiceScheduler</span></a>
+          <a href="https://stormberry.as/labs.html" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNFMjFFMjYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8cGF0aCBkPSJNMTAgMnY3LjMxIi8+CiAgPHBhdGggZD0iTTE0IDkuM1YxLjk5Ii8+CiAgPHBhdGggZD0iTTguNSAyaDciLz4KICA8cGF0aCBkPSJNMTQgOS4zYTYuNSA2LjUgMCAxIDEtNCAwIi8+CiAgPGxpbmUgeDE9IjUuNTIiIHgyPSIxOC40OCIgeTE9IjE2IiB5Mj0iMTYiLz4KPC9zdmc+Cg==" alt="Labs"> <span>Stormberry Labs</span></a>
+          <a href="https://sun.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMTQiIGZpbGw9InVybCgjc3VuR3JhZCkiIC8+CiAgPGcgc3Ryb2tlPSJ1cmwoI3JheUdyYWQpIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+CiAgICA8bGluZSB4MT0iMzIiIHkxPSI0IiAgeDI9IjMyIiB5Mj0iMTIiLz4KICAgIDxsaW5lIHgxPSIzMiIgeTE9IjUyIiB4Mj0iMzIiIHkyPSI2MCIvPgogICAgPGxpbmUgeDE9IjQiICB5MT0iMzIiIHgyPSIxMiIgeTI9IjMyIi8+CiAgICA8bGluZSB4MT0iNTIiIHkxPSIzMiIgeDI9IjYwIiB5Mj0iMzIiLz4KICAgIDxsaW5lIHgxPSIxMS41IiB5MT0iMTEuNSIgeDI9IjE3LjYiIHkyPSIxNy42Ii8+CiAgICA8bGluZSB4MT0iNDYuNCIgeTE9IjQ2LjQiIHgyPSI1Mi41IiB5Mj0iNTIuNSIvPgogICAgPGxpbmUgeDE9IjUyLjUiIHkxPSIxMS41IiB4Mj0iNDYuNCIgeTI9IjE3LjYiLz4KICAgIDxsaW5lIHgxPSIxNy42IiB5MT0iNDYuNCIgeDI9IjExLjUiIHkyPSI1Mi41Ii8+CiAgPC9nPgogIDxkZWZzPgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJzdW5HcmFkIiBjeD0iNDAlIiBjeT0iMzUlIiByPSI2NSUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiAgIHN0b3AtY29sb3I9IiNmZmY3YTEiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI2MCUiICBzdG9wLWNvbG9yPSIjZmZiMzQ3Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZmNmIzNSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icmF5R3JhZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiAgIHN0b3AtY29sb3I9IiNmZmQ3MDAiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjZmY4YzQyIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KPC9zdmc+Cg==" alt="SunApp"> <span>SunApp</span></a>
+          <a href="https://moon.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjYiIGZpbGw9InVybCgjbW9vbkdyYWQpIiAvPgogIDxlbGxpcHNlIGN4PSI0MCIgY3k9IjMyIiByeD0iMjIiIHJ5PSIyNiIgZmlsbD0idXJsKCNzaGFkb3dHcmFkKSIgLz4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibW9vbkdyYWQiIGN4PSIzOCUiIGN5PSIzNSUiIHI9IjcwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiICAgc3RvcC1jb2xvcj0iI2YwZjRmZiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgIHN0b3AtY29sb3I9IiNjOGQ4ZjAiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjN2I5ZmQ0Ii8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJzaGFkb3dHcmFkIiBjeD0iMzAlIiBjeT0iNDAlIiByPSI2MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiAgIHN0b3AtY29sb3I9IiMwOTBkMWUiIHN0b3Atb3BhY2l0eT0iMC45NSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwYTEwMjAiIHN0b3Atb3BhY2l0eT0iMC44NSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+Cjwvc3ZnPgo=" alt="MoonApp"> <span>MoonApp</span></a>
+          <a href="https://photo.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjYiIHN0cm9rZT0idXJsKCNicmFuZEdyYWQpIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyMCIgc3Ryb2tlPSJ1cmwoI2dyYWRBY2NlbnQpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuNSIgLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIxMiIgZmlsbD0idXJsKCNicmFuZEdyYWQpIiAvPgogIDxnIHN0cm9rZT0iIzFhMGEyZSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiPgogICAgPGxpbmUgeDE9IjIyIiB5MT0iMjAiIHgyPSIzOCIgeTI9IjI2IiAvPgogICAgPGxpbmUgeDE9IjQ0IiB5MT0iMjIiIHgyPSIzOCIgeTI9IjM4IiAvPgogICAgPGxpbmUgeDE9IjQyIiB5MT0iNDQiIHgyPSIyNiIgeTI9IjM4IiAvPgogICAgPGxpbmUgeDE9IjIwIiB5MT0iNDIiIHgyPSIyNiIgeTI9IjI2IiAvPgogIDwvZz4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYnJhbmRHcmFkIiB4MT0iMCIgeTE9IjAiIHgyPSI2NCIgeTI9IjY0Ij4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI0ZGRDcwMCIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI1MCUiIHN0b3AtY29sb3I9IiNGRjhDNDIiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzlkNGVkZCIgLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWRBY2NlbnQiIHgxPSIwIiB5MT0iNjQiIHgyPSI2NCIgeTI9IjAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZTBhYWZmIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmZjllMDAiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KPC9zdmc+Cg==" alt="PhotoTimer"> <span>PhotoTimer</span></a>
+          <a href="https://garden.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdhcmRlbkdyYWQiIHgxPSIwIiB5MT0iMjQiIHgyPSIyNCIgeTI9IjAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjNENBRjUwIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM4MUM3ODQiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8IS0tIERhcmsgYmFja2dyb3VuZCBzcXVpcmNsZSBtYXRjaGluZyBTdG9ybWJlcnJ5IHN0eWxlIC0tPgogIDxyZWN0IHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgcng9IjYiIGZpbGw9IiMwODBjMTgiIC8+CiAgPHBhdGggZD0iTTEyIDE5VjEwTTEyIDEwQzEyIDcuNSAxNCA1IDE3LjUgNEMxNy41IDggMTQuNSAxMCAxMiAxMFpNMTIgMTBDMTIgOCAxMC41IDYuNSA3LjUgNkM3LjUgOS41IDkuNSAxMCAxMiAxMFoiIHN0cm9rZT0idXJsKCNnYXJkZW5HcmFkKSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K" alt="LunarGarden"> <span>LunarGarden</span></a>
+          <a href="https://planet.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InBsYW5ldEdyYWQiIHgxPSIwIiB5MT0iMjQiIHgyPSIyNCIgeTI9IjAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjOWQ0ZWRkIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNlMGFhZmYiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHJ4PSI2IiBmaWxsPSIjMDgwYzE4IiAvPgogIDxwYXRoIGQ9Ik00IDE3QzMuNSAxNyAyIDE2LjUgMiAxNUMyIDExIDEwIDcgMjAgOEMyMSA4IDIyIDguNSAyMiAxMEMyMiAxMyAxMCAxNiA0IDE3WiIgc3Ryb2tlPSJ1cmwoI3BsYW5ldEdyYWQpIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNSIgZmlsbD0iIzA4MGMxOCIgc3Ryb2tlPSJ1cmwoI3BsYW5ldEdyYWQpIiBzdHJva2Utd2lkdGg9IjEuNSIvPgo8L3N2Zz4K" alt="PlanetPulse"> <span>PlanetPulse</span></a>
+          <a href="https://astro.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjgiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjQpIi8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjAiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjQpIi8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMTIiIGZpbGw9IiNmZmRkYWEiLz4KICA8Y2lyY2xlIGN4PSIxNCIgY3k9IjE0IiByPSIzIiBmaWxsPSIjYTBjMGZmIi8+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNCIgZmlsbD0iI2ZmYzBhMCIvPgo8L3N2Zz4K" alt="AstroQuiz"> <span>AstroQuiz</span></a>
+          <a href="https://star.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjMyIiBmaWxsPSIjMDgwYzE0Ii8+CiAgPGNpcmNsZSBjeD0iMjAiIGN5PSI0MCIgcj0iNCIgZmlsbD0iI2ZmZiIvPgogIDxjaXJjbGUgY3g9IjQ0IiBjeT0iNDgiIHI9IjMiIGZpbGw9IiNmZmYiLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjI0IiByPSI1IiBmaWxsPSJ1cmwoI3N0YXJHcmFkKSIvPgogIDxjaXJjbGUgY3g9IjUyIiBjeT0iMTgiIHI9IjMiIGZpbGw9IiNmZmYiLz4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjE2IiByPSIyIiBmaWxsPSIjZmZmIi8+CiAgCiAgPGxpbmUgeDE9IjIwIiB5MT0iNDAiIHgyPSIzMiIgeTI9IjI0IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgPGxpbmUgeDE9IjMyIiB5MT0iMjQiIHgyPSI0NCIgeTI9IjQ4IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgPGxpbmUgeDE9IjMyIiB5MT0iMjQiIHgyPSI1MiIgeTI9IjE4IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgPGxpbmUgeDE9IjEyIiB5MT0iMTYiIHgyPSIzMiIgeTI9IjI0IiBzdHJva2U9InVybCgjbGluZUdyYWQpIi8+CiAgCiAgPGRlZnM+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9InN0YXJHcmFkIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI1MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmZmIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2EwYzBmZiIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibGluZUdyYWQiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0icmdiYSgyNTUsMjU1LDI1NSwwLjYpIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0icmdiYSgyNTUsMjU1LDI1NSwwLjIpIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KPC9zdmc+Cg==" alt="StarMap"> <span>StarMap</span></a>
+          <a href="https://scheduler.stormberry.as" class="switcher-card"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJTZXJ2aWNlIFNjaGVkdWxlciI+CiAgPHJlY3QgeD0iNiIgeT0iNiIgd2lkdGg9IjUyIiBoZWlnaHQ9IjUyIiByeD0iMTEiIGZpbGw9IiMwYjBmMTQiLz4KICA8cmVjdCB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzNCIgaGVpZ2h0PSI3IiByeD0iMy41IiBmaWxsPSIjZTg0MTNhIi8+CiAgPHJlY3QgeD0iMTUiIHk9IjI5IiB3aWR0aD0iMzQiIGhlaWdodD0iNSIgcng9IjIuNSIgZmlsbD0iI2U3ZWVmNiIvPgogIDxyZWN0IHg9IjE1IiB5PSI0MCIgd2lkdGg9IjIyIiBoZWlnaHQ9IjUiIHJ4PSIyLjUiIGZpbGw9IiM4YWEwYjQiLz4KICA8Y2lyY2xlIGN4PSI0NCIgY3k9IjQyLjUiIHI9IjQuNSIgZmlsbD0iI2U4NDEzYSIvPgo8L3N2Zz4K" alt="ServiceScheduler"> <span>ServiceScheduler</span></a>
         </div>
       </div>
     </div>
@@ -130,17 +553,1792 @@
       <p class="footer-ai">Proudly powered by sovereign AI agents.</p>
     </div>
   </footer>
+  <script>
 
-  <script src="src/dates.js"></script>
-  <script src="src/rest.js"></script>
-  <script src="src/eligibility.js"></script>
-  <script src="src/engine.js"></script>
-  <script src="src/strength.js"></script>
-  <script src="src/crypto.js"></script>
-  <script src="src/compliance.js"></script>
-  <script src="src/demo.js"></script>
-  <script src="src/countries.js"></script>
-  <script src="src/jobs.js"></script>
-  <script src="src/ui.js"></script>
+/* src/dates.js */
+;(function () {
+  const SB = (globalThis.SB ||= {});
+  const MS_DAY = 86400000;
+  const parseISO = (s) => { const [y,m,d] = s.split('-').map(Number); return Date.UTC(y, m-1, d); };
+  const formatISO = (ms) => { const d = new Date(ms);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`; };
+  const addDays = (ms, n) => ms + n * MS_DAY;
+  const addMonths = (ms, n) => { const d = new Date(ms); d.setUTCMonth(d.getUTCMonth()+n); return d.getTime(); };
+  const daysBetween = (a, b) => Math.round((b - a) / MS_DAY);
+  const today = () => { const n = new Date(); return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()); };
+  const toDisplay = (iso) => { if (!iso || typeof iso !== 'string') return ''; const [y,m,d] = iso.split('-'); if (!y || !m || !d) return ''; return `${d}/${m}/${y}`; };
+  const fromDisplay = (s) => { if (!s || typeof s !== 'string') return ''; const [d,m,y] = s.split('/'); if (!d || !m || !y) return ''; return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; };
+  SB.dates = { parseISO, formatISO, addDays, addMonths, daysBetween, today, toDisplay, fromDisplay, MS_DAY };
+})();
+
+/* src/rest.js */
+;(function () {
+  const SB = (globalThis.SB ||= {});
+  // settings.restMultiplier (default 1) scales the trip length to compute rest days.
+  // settings.minRestDays (default 0) provides a floor.
+  // restDaysOverride always wins when set.
+  const restDays = (e, settings = {}) => {
+    const a = e.availability || {};
+    if (a.restDaysOverride != null) return a.restDaysOverride;
+    const base = a.lastOffshore ? a.lastOffshore.durationDays : 0;
+    return Math.max(settings.minRestDays || 0, Math.round(base * (settings.restMultiplier || 1)));
+  };
+  const restCompleteDate = (e, settings = {}) => {
+    const a = e.availability || {};
+    if (!a.lastOffshore) return null;
+    return SB.dates.addDays(SB.dates.parseISO(a.lastOffshore.end), restDays(e, settings));
+  };
+  const restDaysBank = (e, refMs, settings = {}) => {
+    const rc = restCompleteDate(e, settings);
+    return rc == null ? 0 : Math.max(0, SB.dates.daysBetween(refMs, rc));
+  };
+  // Signed availability: negative = rest days still owed (e.g. -8), 0 = available today,
+  // positive = days available since rest completed. No offshore history = long-available (999).
+  const availabilityScore = (e, refMs, settings = {}) => {
+    const rc = restCompleteDate(e, settings);
+    if (rc == null) return 0;
+    return SB.dates.daysBetween(rc, refMs);
+  };
+  SB.rest = { restDays, restCompleteDate, restDaysBank, availabilityScore };
+})();
+
+/* src/eligibility.js */
+;(function () {
+  const SB = (globalThis.SB ||= {});
+  const D = () => SB.dates;
+  const jobEndMs = (job) => D().addDays(D().parseISO(job.startDate), job.durationDays - 1);
+
+  const hasCompetence = (e, job) =>
+    e.competence.some((c) => c.equipment === job.equipment && c.repairType === job.repairType);
+
+  const usablePassports = (e, job, settings) => {
+    const cutoff = D().addMonths(jobEndMs(job), settings.passportInvalidMonths);
+    return e.passports.filter((p) => D().parseISO(p.expiry) >= cutoff);
+  };
+  const travel = (e, job, settings) => {
+    if (e.nationalities.includes(job.country)) return { ok: true };
+    if (usablePassports(e, job, settings).length === 0) return { ok: false, rule: 'no-valid-passport' };
+    const end = jobEndMs(job);
+    const visa = e.visas.find((v) => v.country === job.country && D().parseISO(v.expiry) >= end);
+    return visa ? { ok: true } : { ok: false, rule: 'needs-visa' };
+  };
+  const certsOk = (e, job) => {
+    const end = jobEndMs(job);
+    // Required certificates are exactly what the job asks for. The next-pick form pre-ticks the
+    // offshore certs (settings.offshoreRequiredCerts) as sensible, removable defaults, so an empty
+    // list deliberately means no certificate filter.
+    return job.requiredCerts.every((t) => e.certs.some((c) => c.type === t && D().parseISO(c.expiry) >= end));
+  };
+  const onVacation = (e, job) => {
+    const s = D().parseISO(job.startDate), end = jobEndMs(job);
+    return (e.availability.vacations || []).some((v) => D().parseISO(v.start) <= end && D().parseISO(v.end) >= s);
+  };
+  // An engineer is double-booked if any existing assignment overlaps the job window [start, end] inclusive.
+  const isDoubleBooked = (e, job) => {
+    const s = D().parseISO(job.startDate), end = jobEndMs(job);
+    return (e.assignments || []).some((a) => D().parseISO(a.start) <= end && D().parseISO(a.end) >= s);
+  };
+  const passportWarning = (e, job, settings) => {
+    const usable = usablePassports(e, job, settings);
+    if (!usable.length) return false;
+    const warn = D().addMonths(jobEndMs(job), settings.passportBufferMonths);
+    return usable.every((p) => D().parseISO(p.expiry) < warn);
+  };
+
+  // Hard-filter order: competence -> travel -> certs -> vacation -> double-booked.
+  const evaluate = (e, job, settings) => {
+    if (!hasCompetence(e, job)) return { eligible: false, failedRule: 'no-competence', passportWarning: false };
+    const t = travel(e, job, settings);
+    if (!t.ok) return { eligible: false, failedRule: t.rule, passportWarning: false };
+    if (!certsOk(e, job)) return { eligible: false, failedRule: 'cert-missing-or-expired', passportWarning: false };
+    if (onVacation(e, job)) return { eligible: false, failedRule: 'on-vacation', passportWarning: false };
+    if (isDoubleBooked(e, job)) return { eligible: false, failedRule: 'double-booked', passportWarning: false };
+    return { eligible: true, failedRule: null, passportWarning: passportWarning(e, job, settings) };
+  };
+  SB.eligibility = { evaluate, jobEndMs };
+})();
+
+/* src/engine.js */
+;(function () {
+  const SB = (globalThis.SB ||= {});
+  const reasonFor = (av, warn) => {
+    let r;
+    if (av >= 900) r = 'Available';
+    else if (av > 0) r = `Available, idle ${av} day${av === 1 ? '' : 's'}`;
+    else if (av === 0) r = 'Available now';
+    else r = `${-av} rest day${-av === 1 ? '' : 's'} remaining, overtime applies`;
+    if (warn) r += '; passport nearing the validity limit';
+    return r;
+  };
+  // Returns the highest competence level for the job's equipment + repairType combination.
+  // Entries that match but carry no level are treated as level 1.
+  const competenceLevel = (e, job) => {
+    const matches = e.competence.filter((c) => c.equipment === job.equipment && c.repairType === job.repairType);
+    if (!matches.length) return 0;
+    return Math.max(...matches.map((c) => c.level ?? 1));
+  };
+  // Keep only values that are real, known certificate types. Guards against non-cert
+  // controls (e.g. the Offshore checkbox, whose browser default value is "on") leaking
+  // into a job's requiredCerts and excluding every engineer. Dedupes, preserves order.
+  const filterKnownCerts = (values, certTypes) => {
+    const known = new Set(certTypes || []);
+    const seen = new Set();
+    const out = [];
+    for (const v of values || []) {
+      if (known.has(v) && !seen.has(v)) { seen.add(v); out.push(v); }
+    }
+    return out;
+  };
+  const nextPick = (job, engineers, settings) => {
+    const startMs = SB.dates.parseISO(job.startDate);
+    const shortlist = [], excluded = [];
+    for (const e of engineers) {
+      const ev = SB.eligibility.evaluate(e, job, settings);
+      if (!ev.eligible) { excluded.push({ id: e.id, name: e.name, failedRule: ev.failedRule }); continue; }
+      const av = SB.rest.availabilityScore(e, startMs, settings);
+      const level = competenceLevel(e, job);
+      shortlist.push({ id: e.id, name: e.name, availability: av, overtime: av < 0,
+        passportWarning: ev.passportWarning, reason: reasonFor(av, ev.passportWarning), level });
+    }
+    // Sort: competence level DESC, then availability score DESC, then name ASC.
+    shortlist.sort((a, b) => b.level - a.level || b.availability - a.availability || a.name.localeCompare(b.name));
+    return { shortlist, excluded };
+  };
+  SB.engine = { nextPick, filterKnownCerts };
+})();
+
+/* src/strength.js */
+;(function () {
+  const SB = (globalThis.SB ||= {});
+  const passwordStrength = (pw) => {
+    if (!pw) return 'unprotected';
+    let classes = 0;
+    if (/[a-z]/.test(pw)) classes++;
+    if (/[A-Z]/.test(pw)) classes++;
+    if (/[0-9]/.test(pw)) classes++;
+    if (/[^A-Za-z0-9]/.test(pw)) classes++;
+    const n = pw.length;
+    if (n < 8 || classes <= 1) return 'weak';
+    if (n >= 16 && classes >= 3) return 'super-strong';
+    if (n >= 12 && classes >= 3) return 'strong';
+    return 'medium';
+  };
+  SB.strength = { passwordStrength };
+})();
+
+/* src/crypto.js */
+;(function () {
+  const SB = (globalThis.SB ||= {});
+  const subtle = globalThis.crypto.subtle;
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const b64encode = (buf) => { const u = new Uint8Array(buf); let s = '';
+    for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); };
+  const b64decode = (str) => { const s = atob(str); const u = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
+  const rnd = (n) => globalThis.crypto.getRandomValues(new Uint8Array(n));
+
+  const deriveKeyPBKDF2 = async (password, salt, iterations) => {
+    const base = await subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+    return subtle.deriveKey({ name:'PBKDF2', salt, iterations, hash:'SHA-256' }, base,
+      { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
+  };
+
+  const encrypt = async (payload, password) => {
+    const salt = rnd(16), iv = rnd(12);
+    const iterations = 600000;
+    const key = await deriveKeyPBKDF2(password, salt, iterations);
+    const ct = await subtle.encrypt({ name:'AES-GCM', iv }, key, enc.encode(JSON.stringify(payload)));
+    return { format:'service-scheduler', version:1,
+      kdf:{ algo:'pbkdf2', hash:'SHA-256', iterations, saltB64:b64encode(salt) },
+      cipher:'AES-256-GCM', ivB64:b64encode(iv), ciphertextB64:b64encode(ct) };
+  };
+
+  const decrypt = async (env, password) => {
+    try {
+      if (env.kdf.algo !== 'pbkdf2') throw new Error('unsupported kdf');
+      const key = await deriveKeyPBKDF2(password, b64decode(env.kdf.saltB64), env.kdf.iterations);
+      const pt = await subtle.decrypt({ name:'AES-GCM', iv:b64decode(env.ivB64) }, key, b64decode(env.ciphertextB64));
+      return JSON.parse(dec.decode(pt));
+    } catch (e) {
+      throw new Error('Unable to unlock: wrong password or corrupted file');
+    }
+  };
+
+  SB.crypto = { encrypt, decrypt, b64encode, b64decode };
+})();
+
+/* src/compliance.js */
+;(function () {
+  const SB = (globalThis.SB ||= {});
+  const D = () => SB.dates;
+  const expiringDocuments = (engineers, asOfMs) => {
+    const b = { d30: [], d60: [], d90: [] };
+    const add = (days, item) => { if (days < 0) return;
+      if (days <= 30) b.d30.push(item); else if (days <= 60) b.d60.push(item); else if (days <= 90) b.d90.push(item); };
+    for (const e of engineers) {
+      for (const p of e.passports) add(D().daysBetween(asOfMs, D().parseISO(p.expiry)),
+        { who:e.name, kind:'Passport', detail:`${p.country} ${p.number}`, expiry:p.expiry, days:D().daysBetween(asOfMs, D().parseISO(p.expiry)) });
+      for (const v of e.visas) add(D().daysBetween(asOfMs, D().parseISO(v.expiry)),
+        { who:e.name, kind:'Visa', detail:v.type ? v.country + ', ' + v.type : v.country, expiry:v.expiry, days:D().daysBetween(asOfMs, D().parseISO(v.expiry)) });
+      for (const c of e.certs) add(D().daysBetween(asOfMs, D().parseISO(c.expiry)),
+        { who:e.name, kind:'Certificate', detail:c.type, expiry:c.expiry, days:D().daysBetween(asOfMs, D().parseISO(c.expiry)) });
+    }
+    for (const k of ['d30','d60','d90']) b[k].sort((a, c) => a.days - c.days);
+    return b;
+  };
+  const availabilityOverview = (engineers, asOfMs, settings = {}) =>
+    engineers.map((e) => ({ id:e.id, name:e.name, availability: SB.rest.availabilityScore(e, asOfMs, settings) }))
+      .filter((x) => x.availability < 0).sort((a, b) => a.availability - b.availability);
+
+  const expiryAlerts = (engineers) => {
+    const alerts = [];
+    for (const e of engineers) {
+      for (const p of e.passports) {
+        if (!p.expiry) continue;
+        alerts.push({
+          alertDate: SB.dates.formatISO(SB.dates.addMonths(SB.dates.parseISO(p.expiry), -12)),
+          realExpiry: p.expiry,
+          who: e.name,
+          kind: 'Passport',
+          detail: `${p.country} ${p.number}`,
+        });
+      }
+      for (const v of e.visas) {
+        if (!v.expiry) continue;
+        alerts.push({
+          alertDate: SB.dates.formatISO(SB.dates.addMonths(SB.dates.parseISO(v.expiry), -12)),
+          realExpiry: v.expiry,
+          who: e.name,
+          kind: 'Visa',
+          detail: `${v.country}, ${v.type}`,
+        });
+      }
+      for (const c of e.certs) {
+        if (!c.expiry) continue;
+        alerts.push({
+          alertDate: SB.dates.formatISO(SB.dates.addMonths(SB.dates.parseISO(c.expiry), -12)),
+          realExpiry: c.expiry,
+          who: e.name,
+          kind: 'Certificate',
+          detail: c.type,
+        });
+      }
+    }
+    alerts.sort((a, b) => a.alertDate < b.alertDate ? -1 : a.alertDate > b.alertDate ? 1 : 0);
+    return alerts;
+  };
+
+  SB.compliance = { expiringDocuments, availabilityOverview, expiryAlerts };
+})();
+
+/* src/demo.js */
+;(function () {
+  const SB = (globalThis.SB ||= {});
+  const EQUIP = ['offshore crane','winch system','Launch and Recovery System (LARS)','lifeboat/davit system','hydraulic power unit (HPU) / control system'];
+  const REPAIRS = ['preventive (scheduled) service','corrective (breakdown) repair','overhaul and recertification (including load test)'];
+  const CERTS = [
+    'offshore safety course',
+    'offshore medical certificate',
+    'BOSIET (OPITO)',
+    'FOET (OPITO)',
+    'HUET',
+    'H2S awareness',
+    'MIST',
+    'sea survival',
+    'working at height',
+    'first aid',
+  ];
+  const COUNTRIES = ['Norway','United Kingdom','Netherlands','Brazil','United Arab Emirates','Angola','Australia','Syria'];
+  const VISATYPES = ['Temporary work permit','Business visitor','Residence permit'];
+  const settings = () => ({
+    restRule: 'equal-to-previous-trip',
+    passportInvalidMonths: 6,
+    passportBufferMonths: 12,
+    restMultiplier: 1,
+    minRestDays: 0,
+    maxConsecutiveDays: 21,
+    offshoreRequiredCerts: ['offshore safety course', 'offshore medical certificate'],
+    equipment: [...EQUIP],
+    repairTypes: [...REPAIRS],
+    certTypes: [...CERTS],
+    countries: [...COUNTRIES],
+    visaTypes: [...VISATYPES],
+  });
+
+  // Full set of valid certs for a normally-qualified engineer (excludes cert types not universally held).
+  const baseCerts = (expiry) => [
+    { type: 'offshore safety course', expiry },
+    { type: 'offshore medical certificate', expiry },
+    { type: 'BOSIET (OPITO)', expiry },
+    { type: 'FOET (OPITO)', expiry },
+    { type: 'HUET', expiry },
+    { type: 'H2S awareness', expiry },
+    { type: 'MIST', expiry },
+    { type: 'sea survival', expiry },
+    { type: 'working at height', expiry },
+    { type: 'first aid', expiry },
+  ];
+  const comp = (equipment, repairType, level) => ({ equipment, repairType, level });
+  // Expand each engineer to cover every equipment x repair-type combination so no job is
+  // uncoverable: listed specialties keep their level, every other combination is added at level 1.
+  const broadComp = (specialties) => {
+    const lvl = {};
+    specialties.forEach((c) => { lvl[c.equipment + '|' + c.repairType] = c.level; });
+    return EQUIP.flatMap((eq) => REPAIRS.map((rep) => comp(eq, rep, lvl[eq + '|' + rep] || 1)));
+  };
+  // Collapse visas with the same country and type, keeping the one with the latest expiry.
+  const dedupeVisas = (visas) => {
+    const seen = new Map();
+    for (const v of (visas || [])) {
+      const k = v.country + '|' + v.type;
+      if (!seen.has(k) || v.expiry > seen.get(k).expiry) seen.set(k, v);
+    }
+    return [...seen.values()];
+  };
+  // Ensure every engineer holds a valid offshore safety course and offshore medical certificate
+  // (add if missing, refresh if already expired) so an offshore job is never blocked on those.
+  const ensureOffshoreCerts = (certs) => {
+    const out = [...(certs || [])];
+    for (const t of ['offshore safety course', 'offshore medical certificate']) {
+      const c = out.find((x) => x.type === t);
+      if (!c) out.push({ type: t, expiry: '2030-06-01' });
+      else if (c.expiry < '2026-09-01') c.expiry = '2030-06-01';
+    }
+    return out;
+  };
+
+  // Two double-booked engineers: overlapping the default crane job (2026-08-01, 10 days).
+  const doubleBookAssignment = { jobTitle: 'Crane overhaul', equipment: 'offshore crane', repairType: 'overhaul and recertification (including load test)', country: 'United Kingdom', start: '2026-07-28', end: '2026-08-10' };
+
+  const engineers = () => ([
+    // 1. clean, fully rested, obvious pick
+    { id:'e01', name:'Lars Pedersen', nationalities:['Norway'],
+      passports:[{country:'Norway',number:'NO11111',expiry:'2031-04-01'}], visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2028-01-01'}],
+      certs:baseCerts('2028-01-01'), competence:[comp('offshore crane','preventive (scheduled) service',3), comp('winch system','corrective (breakdown) repair',2)],
+      availability:{ lastOffshore:{ end:'2026-05-01', durationDays:14 }, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    // 2. still resting -> overtime flag; double-booked on the crane job
+    { id:'e02', name:'Ingrid Solheim', nationalities:['Norway'],
+      passports:[{country:'Norway',number:'NO22222',expiry:'2030-06-01'}], visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2027-09-01'}],
+      certs:baseCerts('2027-06-01'), competence:[comp('offshore crane','preventive (scheduled) service',3)],
+      availability:{ lastOffshore:{ end:'2026-07-25', durationDays:21 }, restDaysOverride:null, vacations:[] },
+      assignments: [doubleBookAssignment] },
+    // 3. passport inside 6-month invalid window for an Aug job
+    { id:'e03', name:'Tom Eriksen', nationalities:['Norway'],
+      passports:[{country:'Norway',number:'NO33333',expiry:'2026-10-01'}], visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2027-01-01'}],
+      certs:baseCerts('2027-01-01'), competence:[comp('offshore crane','preventive (scheduled) service',2)],
+      availability:{ lastOffshore:null, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    // 4. on vacation across early August
+    { id:'e04', name:'Sofia Haugen', nationalities:['Norway'],
+      passports:[{country:'Norway',number:'NO44444',expiry:'2031-01-01'}], visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2028-01-01'}],
+      certs:baseCerts('2028-01-01'), competence:[comp('offshore crane','preventive (scheduled) service',3)],
+      availability:{ lastOffshore:{ end:'2026-04-01', durationDays:10 }, restDaysOverride:null, vacations:[{ start:'2026-07-25', end:'2026-08-15' }] },
+      assignments: [] },
+    // 5. dual national, no UK visa needed; double-booked on the crane job
+    { id:'e05', name:'James Olsen', nationalities:['Norway','United Kingdom'],
+      passports:[{country:'Norway',number:'NO55555',expiry:'2030-01-01'},{country:'United Kingdom',number:'UK55555',expiry:'2030-01-01'}], visas:[],
+      certs:baseCerts('2027-08-01'), competence:[comp('offshore crane','preventive (scheduled) service',3)],
+      availability:{ lastOffshore:{ end:'2026-05-15', durationDays:12 }, restDaysOverride:null, vacations:[] },
+      assignments: [doubleBookAssignment] },
+    // 6. matches crane but missing both offshore safety course (expired) and medical cert; clear failing case
+    { id:'e06', name:'Nora Berg', nationalities:['Norway'],
+      passports:[{country:'Norway',number:'NO66666',expiry:'2031-01-01'}], visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2028-01-01'}],
+      certs:[
+        { type:'offshore safety course', expiry:'2026-06-01' },
+        { type:'sea survival', expiry:'2028-01-01' },
+        { type:'H2S awareness', expiry:'2028-01-01' },
+        { type:'working at height', expiry:'2028-01-01' },
+        { type:'first aid', expiry:'2028-01-01' },
+      ],
+      competence:[comp('offshore crane','preventive (scheduled) service',2)],
+      availability:{ lastOffshore:null, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    // 7-15: varied ordinary engineers across equipment, countries, rest states
+    { id:'e07', name:'Mateus Almeida', nationalities:['Brazil'], passports:[{country:'Brazil',number:'BR70000',expiry:'2029-03-01'}],
+      visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2027-05-01'},{country:'Norway',type:'Residence permit',expiry:'2027-05-01'},{country:'Norway',type:'Residence permit',expiry:'2027-08-01'}], certs:baseCerts('2027-10-01'),
+      competence:[comp('winch system','overhaul and recertification (including load test)',3), comp('Launch and Recovery System (LARS)','corrective (breakdown) repair',2)],
+      availability:{ lastOffshore:{ end:'2026-06-10', durationDays:18 }, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    { id:'e08', name:'Wouter Smit', nationalities:['Netherlands'], passports:[{country:'Netherlands',number:'NL80000',expiry:'2030-09-01'}],
+      visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2028-01-01'},{country:'Norway',type:'Residence permit',expiry:'2031-03-01'}], certs:baseCerts('2028-02-01'),
+      competence:[comp('hydraulic power unit (HPU) / control system','preventive (scheduled) service',3)],
+      availability:{ lastOffshore:{ end:'2026-03-20', durationDays:9 }, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    { id:'e09', name:'Aisha Rahman', nationalities:['United Kingdom','Syria'],
+      passports:[{country:'United Kingdom',number:'UK90000',expiry:'2031-02-01'},{country:'Syria',number:'SY90000',expiry:'2031-02-01'}],
+      visas:[{country:'Norway',type:'Residence permit',expiry:'2027-11-01'}], certs:baseCerts('2027-12-01'), competence:[comp('lifeboat/davit system','overhaul and recertification (including load test)',2)],
+      availability:{ lastOffshore:null, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    { id:'e10', name:'Kari Nilsen', nationalities:['Norway'], passports:[{country:'Norway',number:'NO10000',expiry:'2029-11-01'}],
+      visas:[{country:'Angola',type:'Temporary work permit',expiry:'2027-03-01'}], certs:baseCerts('2027-04-01'),
+      competence:[comp('winch system','preventive (scheduled) service',2)],
+      availability:{ lastOffshore:{ end:'2026-05-20', durationDays:15 }, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    { id:'e11', name:'Diego Santos', nationalities:['Brazil'], passports:[{country:'Brazil',number:'BR11000',expiry:'2028-07-01'}],
+      visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2027-02-01'},{country:'Norway',type:'Residence permit',expiry:'2032-06-01'}], certs:baseCerts('2027-03-01'),
+      competence:[comp('offshore crane','corrective (breakdown) repair',2), comp('winch system','corrective (breakdown) repair',3)],
+      availability:{ lastOffshore:{ end:'2026-06-15', durationDays:20 }, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    { id:'e12', name:'Elena Costa', nationalities:['Brazil','United Kingdom'],
+      passports:[{country:'Brazil',number:'BR12000',expiry:'2030-01-01'},{country:'United Kingdom',number:'UK12000',expiry:'2030-01-01'}],
+      visas:[{country:'Norway',type:'Residence permit',expiry:'2027-06-01'}], certs:baseCerts('2028-01-01'), competence:[comp('lifeboat/davit system','preventive (scheduled) service',3)],
+      availability:{ lastOffshore:{ end:'2026-04-25', durationDays:11 }, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    { id:'e13', name:'Henrik Dahl', nationalities:['Norway'], passports:[{country:'Norway',number:'NO13000',expiry:'2027-02-15'}],
+      visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2028-01-01'}], certs:baseCerts('2027-07-01'),
+      competence:[comp('hydraulic power unit (HPU) / control system','corrective (breakdown) repair',2)],
+      availability:{ lastOffshore:{ end:'2026-05-05', durationDays:13 }, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    { id:'e14', name:'Liam Murphy', nationalities:['United Kingdom'], passports:[{country:'United Kingdom',number:'UK14000',expiry:'2031-06-01'}],
+      visas:[{country:'Norway',type:'Residence permit',expiry:'2028-01-01'},{country:'Norway',type:'Residence permit',expiry:'2031-09-01'}], certs:baseCerts('2028-03-01'),
+      competence:[comp('Launch and Recovery System (LARS)','overhaul and recertification (including load test)',3)],
+      availability:{ lastOffshore:{ end:'2026-06-01', durationDays:16 }, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    { id:'e15', name:'Mia Johansen', nationalities:['Norway'], passports:[{country:'Norway',number:'NO15000',expiry:'2030-12-01'}],
+      visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2027-11-01'}], certs:baseCerts('2027-09-01'),
+      competence:[comp('offshore crane','preventive (scheduled) service',1), comp('lifeboat/davit system','corrective (breakdown) repair',2)],
+      availability:{ lastOffshore:null, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+  ].map((e) => ({ ...e, competence: broadComp(e.competence), visas: dedupeVisas(e.visas), certs: ensureOffshoreCerts(e.certs) })));
+  SB.demo = { settings, engineers };
+})();
+
+/* src/countries.js */
+;(function () {
+  const SB = (globalThis.SB ||= {});
+  // All UN member states plus the two observer states (Holy See, State of Palestine),
+  // ISO 3166-1 English short names. Sorted alphabetically at load so order is guaranteed.
+  SB.countries = [
+    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda",
+    "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain",
+    "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia",
+    "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso",
+    "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic",
+    "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Democratic Republic of the)",
+    "Congo (Republic of the)", "Costa Rica", "Cote d'Ivoire", "Croatia", "Cuba", "Cyprus",
+    "Czechia", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt",
+    "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji",
+    "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada",
+    "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Holy See", "Honduras",
+    "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy",
+    "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Korea (North)",
+    "Korea (South)", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia",
+    "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia",
+    "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico",
+    "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique",
+    "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger",
+    "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Panama",
+    "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar",
+    "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia",
+    "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe",
+    "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia",
+    "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Sudan", "Spain",
+    "Sri Lanka", "State of Palestine", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
+    "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga",
+    "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine",
+    "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan",
+    "Vanuatu", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+  ].sort((a, b) => a.localeCompare(b, 'en'));
+})();
+
+/* src/jobs.js */
+// src/jobs.js
+// First-class job records are the source of truth for who is assigned to what.
+// Each engineer's `assignments` list is a derived projection of these jobs, kept in
+// sync so eligibility (double-booking) and the schedule view keep working unchanged.
+;(function () {
+  const SB = (globalThis.SB ||= {});
+
+  const emptyNotes = () => ({ customer: '', contact: '', phone: '', email: '', text: '' });
+
+  // Smallest 'jN' identifier not already used by the given jobs. Deterministic (testable).
+  const nextJobId = (jobs) => {
+    const used = new Set((jobs || []).map((j) => j.id));
+    let n = 1;
+    while (used.has('j' + n)) n++;
+    return 'j' + n;
+  };
+
+  const assignmentKey = (a) => [a.jobTitle, a.country, a.start, a.end].join('||');
+  const jobSpecKey = (s) => [s.title, s.equipment, s.repairType, s.country, s.start, s.end].join('||');
+
+  // Reconstruct first-class jobs from engineers' legacy assignment lists. Assignments
+  // that share title+country+start+end collapse into one job. Used to migrate old files
+  // and to seed jobs for the demo roster.
+  const fromAssignments = (engineers) => {
+    const byKey = new Map();
+    for (const e of engineers || []) {
+      for (const a of e.assignments || []) {
+        const k = assignmentKey(a);
+        if (!byKey.has(k)) {
+          byKey.set(k, {
+            id: '', title: a.jobTitle || '', equipment: a.equipment || '', repairType: a.repairType || '',
+            country: a.country || '', start: a.start, end: a.end, engineerIds: [], notes: emptyNotes(),
+          });
+        }
+        const job = byKey.get(k);
+        if (!job.engineerIds.includes(e.id)) job.engineerIds.push(e.id);
+      }
+    }
+    const jobs = [...byKey.values()];
+    jobs.forEach((j, i) => { j.id = 'j' + (i + 1); });
+    return jobs;
+  };
+
+  // Rebuild each engineer's derived assignment list from the jobs (jobs are authoritative).
+  const syncAssignments = (engineers, jobs) => {
+    for (const e of engineers || []) {
+      e.assignments = (jobs || [])
+        .filter((j) => j.engineerIds.includes(e.id))
+        .map((j) => ({ jobId: j.id, jobTitle: j.title, country: j.country, start: j.start, end: j.end }));
+    }
+    return engineers;
+  };
+
+  // Find a job matching the full spec (title+equipment+repairType+country+dates); create it
+  // if absent. Then add the engineer if not already on it. Returns the new jobs array and jobId.
+  const assignToJob = (jobs, spec, engineerId) => {
+    const list = jobs ? jobs.map((j) => ({ ...j, engineerIds: [...j.engineerIds] })) : [];
+    let job = list.find((j) => jobSpecKey(j) === jobSpecKey(spec));
+    if (!job) {
+      job = {
+        id: nextJobId(list), title: spec.title || '', equipment: spec.equipment || '',
+        repairType: spec.repairType || '', country: spec.country || '', start: spec.start, end: spec.end,
+        engineerIds: [], notes: emptyNotes(),
+      };
+      list.push(job);
+    }
+    if (!list.find((j) => j.id === job.id).engineerIds.includes(engineerId)) {
+      list.find((j) => j.id === job.id).engineerIds.push(engineerId);
+    }
+    return { jobs: list, jobId: job.id };
+  };
+
+  const addEngineerToJob = (jobs, jobId, engineerId) =>
+    (jobs || []).map((j) => j.id === jobId && !j.engineerIds.includes(engineerId)
+      ? { ...j, engineerIds: [...j.engineerIds, engineerId] }
+      : j);
+
+  const removeEngineerFromJob = (jobs, jobId, engineerId) =>
+    (jobs || []).map((j) => j.id === jobId
+      ? { ...j, engineerIds: j.engineerIds.filter((id) => id !== engineerId) }
+      : j);
+
+  const deleteJob = (jobs, jobId) => (jobs || []).filter((j) => j.id !== jobId);
+
+  SB.jobs = {
+    emptyNotes, nextJobId, fromAssignments, syncAssignments,
+    assignToJob, addEngineerToJob, removeEngineerFromJob, deleteJob,
+  };
+})();
+
+/* src/ui.js */
+// src/ui.js
+;(function () {
+  const SB = (globalThis.SB ||= {});
+  const $ = (id) => document.getElementById(id);
+  const state = { settings: null, engineers: [], jobs: [], dirty: false, password: '' };
+
+  const showApp = () => {
+    $('lock').hidden = true; $('tabs').hidden = false;
+    showTab('roster'); markClean();
+  };
+  const markDirty = () => { state.dirty = true; $('fileState').textContent = 'Unsaved changes'; };
+  const markClean = () => { state.dirty = false; $('fileState').textContent = 'Roster loaded'; };
+
+  // password meter (lock screen)
+  $('pw').addEventListener('input', (e) => {
+    const s = SB.strength.passwordStrength(e.target.value);
+    const m = $('meter'); m.className = 'meter m-' + s;
+    m.innerHTML = '<span></span>';
+    let lbl = $('meterLabel'); if (!lbl) { lbl = document.createElement('div'); lbl.id='meterLabel'; lbl.className='meter-label'; m.after(lbl); }
+    lbl.textContent = 'Password: ' + s.replace('-', ' ');
+  });
+
+  $('newBtn').addEventListener('click', () => {
+    state.settings = SB.demo.settings(); state.engineers = SB.demo.engineers(); state.password = '';
+    state.jobs = SB.jobs.fromAssignments(state.engineers);
+    SB.jobs.syncAssignments(state.engineers, state.jobs);
+    showApp();
+  });
+
+  $('unlockBtn').addEventListener('click', async () => {
+    $('lockError').hidden = true;
+    const file = $('fileInput').files[0];
+    if (!file) { showError('Choose a roster file first.'); return; }
+    try {
+      const env = JSON.parse(await file.text());
+      const pw = $('pw').value;
+      const payload = await SB.crypto.decrypt(env, pw);
+      state.settings = payload.settings; state.engineers = payload.engineers; state.password = pw;
+      state.jobs = payload.jobs || SB.jobs.fromAssignments(state.engineers);
+      SB.jobs.syncAssignments(state.engineers, state.jobs);
+      showApp();
+    } catch (e) { showError(e.message); }
+  });
+  const showError = (msg) => { const el = $('lockError'); el.textContent = msg; el.hidden = false; };
+
+  // tabs
+  document.querySelectorAll('#tabs button[data-tab]').forEach((b) =>
+    b.addEventListener('click', () => showTab(b.dataset.tab)));
+  function showTab(name) {
+    document.querySelectorAll('#tabs button[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+    for (const t of ['roster','nextpick','compliance','settings','schedule']) $(t).hidden = (t !== name);
+    if (name === 'roster') SB.ui.renderRoster();
+    if (name === 'nextpick') SB.ui.renderNextPick();
+    if (name === 'compliance') SB.ui.renderCompliance();
+    if (name === 'settings') SB.ui.renderSettings();
+    if (name === 'schedule') SB.ui.renderSchedule();
+  }
+
+  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
+  const today = () => SB.dates.today();
+
+  // ---- unique id for new engineers ----
+  function newEngineerId() {
+    if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+      return globalThis.crypto.randomUUID();
+    }
+    let max = 0;
+    for (const e of state.engineers) {
+      const m = String(e.id).match(/(\d+)$/);
+      if (m) { const n = parseInt(m[1], 10); if (n > max) max = n; }
+    }
+    return 'e' + String(max + 1).padStart(2, '0');
+  }
+
+  function renderRoster() {
+    const todayMs = today();
+    const sorted = [...state.engineers].sort((a, b) =>
+      SB.rest.availabilityScore(b, todayMs, state.settings) - SB.rest.availabilityScore(a, todayMs, state.settings));
+    const rows = sorted.map((e) => {
+      const av = SB.rest.availabilityScore(e, todayMs, state.settings);
+      let avPill;
+      if (av < 0) {
+        avPill = `<span class="pill ot">${-av} rest days left</span>`;
+      } else if (av === 0) {
+        avPill = `<span class="pill ok">Available</span>`;
+      } else if (av >= 900) {
+        avPill = `<span class="pill ok">Available</span>`;
+      } else {
+        avPill = `<span class="pill ok">Available + ${av} days</span>`;
+      }
+      return `<tr data-id="${esc(e.id)}"><td><a href="#" data-id="${esc(e.id)}">${esc(e.name)}</a></td>
+        <td>${esc(e.nationalities.join(', '))}</td><td>${e.competence.length} skills</td><td>${avPill}</td></tr>`;
+    }).join('');
+    $('roster').innerHTML = `<h2>Roster</h2>
+      <div class="roster-header"><button id="newEngineerBtn">New engineer</button></div>
+      <table><thead><tr><th>Name</th><th>Nationalities</th><th>Competence</th><th>Availability</th></tr></thead><tbody>${rows}</tbody></table><div id="detail"></div>`;
+    $('roster').querySelectorAll('a[data-id]').forEach((a) =>
+      a.addEventListener('click', (ev) => { ev.preventDefault(); renderEngineerDetail(a.dataset.id); }));
+    $('newEngineerBtn').addEventListener('click', () => {
+      const id = newEngineerId();
+      const eng = { id, name: 'New engineer', nationalities: [], passports: [], visas: [], certs: [], competence: [],
+        availability: { lastOffshore: null, restDaysOverride: null, vacations: [] } };
+      state.engineers.push(eng);
+      markDirty();
+      renderRoster();
+      renderEngineerEditForm(id);
+    });
+  }
+
+  function renderEngineerDetail(id) {
+    const e = state.engineers.find((x) => x.id === id); if (!e) return;
+    const list = (arr, fn) => arr.map(fn).join('') || '<li class="muted">none</li>';
+    const av = SB.rest.availabilityScore(e, today(), state.settings);
+    const avDisplay = av >= 900 ? 'Available' : String(av);
+    const detailEl = $('detail');
+    detailEl.innerHTML = `<div class="card"><h3>${esc(e.name)}</h3>
+      <p><strong>Nationalities:</strong> ${esc(e.nationalities.join(', '))}</p>
+      <p><strong>Passports:</strong><ul>${list(e.passports, (p) => `<li>${esc(p.country)} ${esc(p.number)}, expires ${esc(SB.dates.toDisplay(p.expiry))}</li>`)}</ul></p>
+      <p><strong>Visas:</strong><ul>${list(e.visas, (v) => `<li>${esc(v.country)}, ${esc(v.type)}, expires ${esc(SB.dates.toDisplay(v.expiry))}</li>`)}</ul></p>
+      <p><strong>Certificates:</strong><ul>${list(e.certs, (c) => `<li>${esc(c.type)}, expires ${esc(SB.dates.toDisplay(c.expiry))}</li>`)}</ul></p>
+      <p><strong>Competence:</strong><ul>${list(e.competence, (c) => `<li>${esc(c.equipment)} / ${esc(c.repairType)} (level ${c.level})</li>`)}</ul></p>
+      <p><strong>Availability score:</strong> ${esc(avDisplay)}</p>
+      <p><strong>Assignments:</strong> ${
+        (e.assignments && e.assignments.length)
+          ? e.assignments.map((a) => `${esc(a.jobTitle)}, ${esc(a.country)}, ${esc(SB.dates.toDisplay(a.start))} to ${esc(SB.dates.toDisplay(a.end))}`).join('<br>')
+          : 'none'
+      }</p>
+      <button data-edit-id="${esc(e.id)}">Edit</button></div>`;
+    detailEl.querySelector('button[data-edit-id]').addEventListener('click', () => {
+      renderEngineerEditForm(id);
+    });
+  }
+
+  // ---- engineer edit form ----
+
+  function renderEngineerEditForm(id) {
+    const e = state.engineers.find((x) => x.id === id); if (!e) return;
+    const s = state.settings;
+    const detailEl = $('detail');
+
+    const form = document.createElement('div');
+    form.className = 'card';
+    form.setAttribute('data-edit-id', id);
+
+    const h = document.createElement('h3');
+    h.textContent = 'Edit engineer';
+    form.appendChild(h);
+
+    function fieldRow(labelText, inputEl) {
+      const row = document.createElement('p');
+      const lbl = document.createElement('label');
+      lbl.textContent = labelText + ' ';
+      lbl.appendChild(inputEl);
+      row.appendChild(lbl);
+      return row;
+    }
+
+    function textInput(value) {
+      const el = document.createElement('input');
+      el.type = 'text'; el.value = value || '';
+      return el;
+    }
+
+    // date input: text field with dd/mm/yyyy display
+    function dateInput(isoValue) {
+      const el = document.createElement('input');
+      el.type = 'text'; el.placeholder = 'dd/mm/yyyy';
+      el.value = SB.dates.toDisplay(isoValue || '');
+      el.className = 'inp-date';
+      return el;
+    }
+
+    function numberInput(value, placeholder) {
+      const el = document.createElement('input');
+      el.type = 'number'; el.value = (value !== null && value !== undefined) ? value : '';
+      if (placeholder) el.placeholder = placeholder;
+      return el;
+    }
+
+    // select with fallback: if storedValue is not in opts, add it as a selected option
+    function selectEl(opts, storedValue) {
+      const el = document.createElement('select');
+      const options = [...opts];
+      if (storedValue && !options.includes(storedValue)) {
+        const extra = document.createElement('option');
+        extra.value = storedValue; extra.textContent = storedValue; extra.selected = true;
+        el.appendChild(extra);
+      }
+      options.forEach((o) => {
+        const opt = document.createElement('option');
+        opt.value = o; opt.textContent = o;
+        if (o === storedValue) opt.selected = true;
+        el.appendChild(opt);
+      });
+      return el;
+    }
+
+    function removeBtn() {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = 'Remove';
+      b.className = 'btn-remove';
+      return b;
+    }
+
+    function buildListSection(title, rows, buildRow, addText) {
+      const section = document.createElement('div');
+      section.className = 'edit-section';
+      const heading = document.createElement('strong');
+      heading.textContent = title;
+      section.appendChild(heading);
+
+      const list = document.createElement('div');
+      list.className = 'edit-list';
+
+      rows.forEach((item) => { list.appendChild(buildRow(item)); });
+
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button'; addBtn.textContent = addText;
+      addBtn.addEventListener('click', () => { list.appendChild(buildRow(null)); });
+
+      section.appendChild(list);
+      section.appendChild(addBtn);
+      return { section, list };
+    }
+
+    // --- name ---
+    const nameInput = textInput(e.name);
+    form.appendChild(fieldRow('Name', nameInput));
+
+    // --- nationalities ---
+    function buildNationalityRow(nat) {
+      const row = document.createElement('div');
+      row.className = 'edit-row';
+      const inp = textInput(nat || '');
+      inp.placeholder = 'Nationality';
+      inp.className = 'inp-nationality';
+      const rb = removeBtn();
+      rb.addEventListener('click', () => row.remove());
+      row.appendChild(inp);
+      row.appendChild(rb);
+      return row;
+    }
+    const { section: natSection } = buildListSection(
+      'Nationalities', e.nationalities, buildNationalityRow, 'Add nationality');
+    form.appendChild(natSection);
+
+    // --- passports ---
+    function buildPassportRow(p) {
+      const row = document.createElement('div');
+      row.className = 'edit-row';
+      const country = textInput(p ? p.country : ''); country.placeholder = 'Country'; country.className = 'inp-pp-country';
+      const number = textInput(p ? p.number : ''); number.placeholder = 'Number'; number.className = 'inp-pp-number';
+      const expiry = dateInput(p ? p.expiry : ''); expiry.className += ' inp-pp-expiry';
+      const rb = removeBtn(); rb.addEventListener('click', () => row.remove());
+      [country, number, expiry, rb].forEach((el) => row.appendChild(el));
+      return row;
+    }
+    const { section: ppSection } = buildListSection(
+      'Passports', e.passports, buildPassportRow, 'Add passport');
+    form.appendChild(ppSection);
+
+    // --- visas ---
+    function buildVisaRow(v) {
+      const row = document.createElement('div');
+      row.className = 'edit-row';
+      const countrySel = selectEl(SB.countries, v ? v.country : (SB.countries[0] || ''));
+      countrySel.className = 'inp-visa-country';
+      const typeSel = selectEl(s.visaTypes || [], v ? v.type : ((s.visaTypes || [])[0] || ''));
+      typeSel.className = 'inp-visa-type';
+      const expiry = dateInput(v ? v.expiry : ''); expiry.className += ' inp-visa-expiry';
+      const rb = removeBtn(); rb.addEventListener('click', () => row.remove());
+      [countrySel, typeSel, expiry, rb].forEach((el) => row.appendChild(el));
+      return row;
+    }
+    const { section: visaSection } = buildListSection(
+      'Visas', e.visas, buildVisaRow, 'Add visa');
+    form.appendChild(visaSection);
+
+    // --- certificates ---
+    function buildCertRow(c) {
+      const row = document.createElement('div');
+      row.className = 'edit-row';
+      const typeSel = selectEl(s.certTypes || [], c ? c.type : ((s.certTypes || [])[0] || ''));
+      typeSel.className = 'inp-cert-type';
+      const expiry = dateInput(c ? c.expiry : ''); expiry.className += ' inp-cert-expiry';
+      const rb = removeBtn(); rb.addEventListener('click', () => row.remove());
+      [typeSel, expiry, rb].forEach((el) => row.appendChild(el));
+      return row;
+    }
+    const { section: certSection } = buildListSection(
+      'Certificates', e.certs, buildCertRow, 'Add certificate');
+    form.appendChild(certSection);
+
+    // --- competence ---
+    function buildCompRow(c) {
+      const row = document.createElement('div');
+      row.className = 'edit-row';
+      const eqSel = selectEl(s.equipment, c ? c.equipment : s.equipment[0]);
+      eqSel.className = 'inp-comp-eq';
+      const repSel = selectEl(s.repairTypes, c ? c.repairType : s.repairTypes[0]);
+      repSel.className = 'inp-comp-rep';
+      const lvlSel = selectEl(['1','2','3'], c ? String(c.level) : '1');
+      lvlSel.className = 'inp-comp-lvl';
+      const rb = removeBtn(); rb.addEventListener('click', () => row.remove());
+      [eqSel, repSel, lvlSel, rb].forEach((el) => row.appendChild(el));
+      return row;
+    }
+    const { section: compSection } = buildListSection(
+      'Competence', e.competence, buildCompRow, 'Add competence');
+    form.appendChild(compSection);
+
+    // --- availability ---
+    const availSection = document.createElement('div');
+    availSection.className = 'edit-section';
+    const availHeading = document.createElement('strong');
+    availHeading.textContent = 'Availability';
+    availSection.appendChild(availHeading);
+
+    const lo = e.availability.lastOffshore;
+    const loEndInput = dateInput(lo ? lo.end : '');
+    loEndInput.id = 'edit-lo-end';
+    const loDurInput = numberInput(lo ? lo.durationDays : '', 'Days');
+    loDurInput.id = 'edit-lo-dur';
+    const loRow = document.createElement('p');
+    loRow.innerHTML = '<label>Last offshore end: </label>';
+    loRow.querySelector('label').appendChild(loEndInput);
+    loRow.innerHTML += ' ';
+    const durLabel = document.createElement('label');
+    durLabel.textContent = 'Duration (days): ';
+    durLabel.appendChild(loDurInput);
+    loRow.appendChild(durLabel);
+    availSection.appendChild(loRow);
+
+    const rdo = e.availability.restDaysOverride;
+    const rdoInput = numberInput(rdo !== null && rdo !== undefined ? rdo : '', 'Leave blank for automatic');
+    rdoInput.id = 'edit-rdo';
+    availSection.appendChild(fieldRow('Rest days override (blank = automatic):', rdoInput));
+
+    // vacations
+    function buildVacRow(v) {
+      const row = document.createElement('div');
+      row.className = 'edit-row';
+      const start = dateInput(v ? v.start : ''); start.className += ' inp-vac-start'; start.placeholder = 'dd/mm/yyyy';
+      const end = dateInput(v ? v.end : ''); end.className += ' inp-vac-end'; end.placeholder = 'dd/mm/yyyy';
+      const rb = removeBtn(); rb.addEventListener('click', () => row.remove());
+      const startLabel = document.createElement('label');
+      startLabel.textContent = 'Start: '; startLabel.appendChild(start);
+      const endLabel = document.createElement('label');
+      endLabel.textContent = ' End: '; endLabel.appendChild(end);
+      [startLabel, endLabel, rb].forEach((el) => row.appendChild(el));
+      return row;
+    }
+    const vacList = document.createElement('div');
+    vacList.className = 'edit-list';
+    (e.availability.vacations || []).forEach((v) => vacList.appendChild(buildVacRow(v)));
+    const addVacBtn = document.createElement('button');
+    addVacBtn.type = 'button'; addVacBtn.textContent = 'Add vacation';
+    addVacBtn.addEventListener('click', () => vacList.appendChild(buildVacRow(null)));
+    availSection.appendChild(document.createElement('br'));
+    const vacLabel = document.createElement('strong');
+    vacLabel.textContent = 'Vacations:';
+    availSection.appendChild(vacLabel);
+    availSection.appendChild(vacList);
+    availSection.appendChild(addVacBtn);
+
+    form.appendChild(availSection);
+
+    // --- save / cancel ---
+    const btnRow = document.createElement('div');
+    btnRow.className = 'edit-actions';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button'; saveBtn.textContent = 'Save changes';
+    saveBtn.addEventListener('click', () => {
+      const nat = [...form.querySelectorAll('.inp-nationality')]
+        .map((el) => el.value.trim()).filter(Boolean);
+
+      // helper: read dd/mm/yyyy text field and convert back to ISO
+      const readDate = (el) => SB.dates.fromDisplay(el.value.trim());
+
+      const passports = [...form.querySelectorAll('.edit-list')[0].children].map((row) => ({
+        country: row.querySelector('.inp-pp-country').value.trim(),
+        number: row.querySelector('.inp-pp-number').value.trim(),
+        expiry: readDate(row.querySelector('.inp-pp-expiry')),
+      })).filter((p) => p.country || p.number || p.expiry);
+
+      const visas = [...form.querySelectorAll('.edit-list')[1].children].map((row) => ({
+        country: row.querySelector('.inp-visa-country').value,
+        type: row.querySelector('.inp-visa-type').value,
+        expiry: readDate(row.querySelector('.inp-visa-expiry')),
+      })).filter((v) => v.country || v.type || v.expiry);
+
+      const certs = [...form.querySelectorAll('.edit-list')[2].children].map((row) => ({
+        type: row.querySelector('.inp-cert-type').value,
+        expiry: readDate(row.querySelector('.inp-cert-expiry')),
+      })).filter((c) => c.type || c.expiry);
+
+      const competence = [...form.querySelectorAll('.edit-list')[3].children].map((row) => ({
+        equipment: row.querySelector('.inp-comp-eq').value,
+        repairType: row.querySelector('.inp-comp-rep').value,
+        level: Number(row.querySelector('.inp-comp-lvl').value),
+      }));
+
+      const loEndRaw = readDate(form.querySelector('#edit-lo-end'));
+      const loDur = form.querySelector('#edit-lo-dur').value;
+      const lastOffshore = loEndRaw ? { end: loEndRaw, durationDays: Number(loDur) || 0 } : null;
+
+      const rdoVal = form.querySelector('#edit-rdo').value.trim();
+      const restDaysOverride = rdoVal !== '' ? Number(rdoVal) : null;
+
+      const vacations = [...form.querySelectorAll('.edit-list')[4].children].map((row) => ({
+        start: readDate(row.querySelector('.inp-vac-start')),
+        end: readDate(row.querySelector('.inp-vac-end')),
+      })).filter((v) => v.start || v.end);
+
+      const original = state.engineers.find((x) => x.id === id) || {};
+      const updated = {
+        ...original,
+        id,
+        name: nameInput.value.trim() || 'Unnamed engineer',
+        nationalities: nat,
+        passports,
+        visas,
+        certs,
+        competence,
+        availability: { lastOffshore, restDaysOverride, vacations },
+      };
+
+      const idx = state.engineers.findIndex((x) => x.id === id);
+      if (idx !== -1) state.engineers[idx] = updated;
+      markDirty();
+      renderRoster();
+      renderEngineerDetail(id);
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button'; cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => { renderEngineerDetail(id); });
+
+    btnRow.appendChild(saveBtn);
+    btnRow.appendChild(cancelBtn);
+    form.appendChild(btnRow);
+
+    detailEl.innerHTML = '';
+    detailEl.appendChild(form);
+  }
+
+  // ---- Compliance calendar state ----
+  const calState = { year: 0, month: 0 };
+
+  function renderCompliance() {
+    const todayMs = today();
+    const now = new Date(todayMs);
+    if (calState.year === 0) { calState.year = now.getUTCFullYear(); calState.month = now.getUTCMonth(); }
+    const allAlerts = SB.compliance.expiryAlerts(state.engineers);
+    renderComplianceCalendar(allAlerts);
+  }
+
+  function renderComplianceCalendar(allAlerts) {
+    const el = $('compliance');
+    el.innerHTML = '';
+
+    // heading
+    const h2 = document.createElement('h2');
+    h2.textContent = 'Compliance';
+    el.appendChild(h2);
+
+    // calendar card
+    const card = document.createElement('div');
+    card.className = 'cal-card';
+
+    // nav header
+    const navRow = document.createElement('div');
+    navRow.className = 'cal-nav';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'secondary';
+    prevBtn.textContent = '< Prev';
+    prevBtn.addEventListener('click', () => {
+      if (calState.month === 0) { calState.month = 11; calState.year -= 1; }
+      else { calState.month -= 1; }
+      renderComplianceCalendar(allAlerts);
+    });
+
+    const monthLabel = document.createElement('span');
+    monthLabel.className = 'cal-month-label';
+    const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    monthLabel.textContent = `${MONTH_NAMES[calState.month]} ${calState.year}`;
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'secondary';
+    nextBtn.textContent = 'Next >';
+    nextBtn.addEventListener('click', () => {
+      if (calState.month === 11) { calState.month = 0; calState.year += 1; }
+      else { calState.month += 1; }
+      renderComplianceCalendar(allAlerts);
+    });
+
+    const nextEventBtn = document.createElement('button');
+    nextEventBtn.type = 'button';
+    nextEventBtn.className = 'secondary';
+    nextEventBtn.textContent = 'Next event';
+    nextEventBtn.addEventListener('click', () => {
+      // last day of current viewed month (UTC)
+      const lastDay = SB.dates.formatISO(new Date(Date.UTC(calState.year, calState.month + 1, 0)).getTime());
+      const ahead = allAlerts.find((a) => a.alertDate > lastDay);
+      if (ahead) {
+        const d = new Date(SB.dates.parseISO(ahead.alertDate));
+        calState.year = d.getUTCFullYear();
+        calState.month = d.getUTCMonth();
+        renderComplianceCalendar(allAlerts);
+      } else {
+        noNextNote.hidden = false;
+      }
+    });
+
+    navRow.appendChild(prevBtn);
+    navRow.appendChild(monthLabel);
+    navRow.appendChild(nextBtn);
+    navRow.appendChild(nextEventBtn);
+    card.appendChild(navRow);
+
+    const noNextNote = document.createElement('p');
+    noNextNote.className = 'muted cal-no-next';
+    noNextNote.textContent = 'No further events ahead.';
+    noNextNote.hidden = true;
+    card.appendChild(noNextNote);
+
+    // build grid
+    const grid = document.createElement('div');
+    grid.className = 'cal-grid';
+
+    const DOW_HEADERS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    DOW_HEADERS.forEach((d) => {
+      const hdr = document.createElement('div');
+      hdr.className = 'cal-dow';
+      hdr.textContent = d;
+      grid.appendChild(hdr);
+    });
+
+    // first weekday of this month (Monday = 0)
+    const firstDate = new Date(Date.UTC(calState.year, calState.month, 1));
+    const startDow = (firstDate.getUTCDay() + 6) % 7; // 0=Mon
+    const daysInMonth = new Date(Date.UTC(calState.year, calState.month + 1, 0)).getUTCDate();
+
+    // alerts in this month indexed by day
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const monthPrefix = `${calState.year}-${pad2(calState.month + 1)}-`;
+    const alertsByDay = {};
+    for (const a of allAlerts) {
+      if (a.alertDate.startsWith(monthPrefix)) {
+        const day = parseInt(a.alertDate.slice(8, 10), 10);
+        if (!alertsByDay[day]) alertsByDay[day] = [];
+        alertsByDay[day].push(a);
+      }
+    }
+
+    // blank leading cells
+    for (let i = 0; i < startDow; i++) {
+      const blank = document.createElement('div');
+      blank.className = 'cal-day cal-blank';
+      grid.appendChild(blank);
+    }
+
+    // day cells
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'cal-day';
+      const hasEvents = Boolean(alertsByDay[d]);
+      if (hasEvents) cell.classList.add('has-event');
+      const num = document.createElement('span');
+      num.className = 'cal-day-num';
+      num.textContent = String(d);
+      cell.appendChild(num);
+      if (hasEvents) {
+        const dot = document.createElement('span');
+        dot.className = 'cal-event-dot';
+        cell.appendChild(dot);
+        cell.addEventListener('click', () => {
+          const iso = `${calState.year}-${pad2(calState.month + 1)}-${pad2(d)}`;
+          // scroll / highlight the event list entries for this day
+          el.querySelectorAll('.cal-event-row').forEach((row) => {
+            row.classList.toggle('cal-event-highlight', row.dataset.alertDate === iso);
+          });
+        });
+      }
+      grid.appendChild(cell);
+    }
+
+    card.appendChild(grid);
+
+    // in-month alert list
+    const monthAlerts = allAlerts.filter((a) => a.alertDate.startsWith(monthPrefix));
+    if (monthAlerts.length) {
+      const listHead = document.createElement('h3');
+      listHead.className = 'cal-list-head';
+      listHead.textContent = 'Events this month';
+      card.appendChild(listHead);
+      monthAlerts.forEach((a) => {
+        const row = document.createElement('p');
+        row.className = 'cal-event-row';
+        row.dataset.alertDate = a.alertDate;
+        row.textContent = `${SB.dates.toDisplay(a.alertDate)} - ${a.who} - ${a.detail} will expire ${SB.dates.toDisplay(a.realExpiry)}`;
+        card.appendChild(row);
+      });
+    } else {
+      const none = document.createElement('p');
+      none.className = 'muted';
+      none.textContent = 'No expiry alerts this month.';
+      card.appendChild(none);
+    }
+
+    el.appendChild(card);
+
+    // availability / resting overview
+    const resting = SB.compliance.availabilityOverview(state.engineers, today());
+    const restHead = document.createElement('h3');
+    restHead.textContent = 'Availability (currently resting)';
+    el.appendChild(restHead);
+    if (resting.length) {
+      const table = document.createElement('table');
+      table.innerHTML = `<thead><tr><th>Who</th><th>Availability</th></tr></thead><tbody>${
+        resting.map((r) => `<tr><td>${esc(r.name)}</td><td>${r.availability}</td></tr>`).join('')
+      }</tbody>`;
+      el.appendChild(table);
+    } else {
+      const p = document.createElement('p');
+      p.className = 'muted';
+      p.textContent = 'Everyone is fully rested.';
+      el.appendChild(p);
+    }
+  }
+
+  function renderNextPick() {
+    const s = state.settings;
+    const opts = (arr) => arr.map((x) => `<option>${esc(x)}</option>`).join('');
+    const certChecks = s.certTypes.map((c) => `<label class="inline"><input type="checkbox" value="${esc(c)}" ${(s.offshoreRequiredCerts||[]).includes(c)?'checked':''}> ${esc(c)}</label>`).join(' ');
+    $('nextpick').innerHTML = `<h2>Find next pick</h2>
+      <div class="card">
+        <label>Job title <input type="text" id="j_title" placeholder="Optional label"></label>
+        <label>Equipment <select id="j_eq">${opts(s.equipment)}</select></label>
+        <label>Repair type <select id="j_rep">${opts(s.repairTypes)}</select></label>
+        <label>Destination country <select id="j_country">${opts(SB.countries)}</select></label>
+        <label class="inline"><input type="checkbox" id="j_off" checked> Offshore</label>
+        <label>Start date <input type="text" id="j_start" placeholder="dd/mm/yyyy" value="01/08/2026"></label>
+        <label>Duration (days) <input type="number" id="j_dur" value="10" min="1"></label>
+        <label>Team size <input type="number" id="j_team" value="1" min="1" step="1"></label>
+        <div id="reqCerts">Required certificates:<br>${certChecks}</div>
+        <button id="runPick">Find engineers</button>
+      </div>
+      <div id="pickResult"></div>`;
+    $('runPick').addEventListener('click', runPick);
+  }
+
+  function runPick() {
+    const titleVal = $('j_title').value.trim();
+    const equipment = $('j_eq').value;
+    const repairType = $('j_rep').value;
+    const startDate = SB.dates.fromDisplay($('j_start').value);
+    if (!startDate) { $('pickResult').innerHTML = '<p class="warn">Enter a valid start date as dd/mm/yyyy.</p>'; return; }
+    const job = {
+      equipment, repairType,
+      country: $('j_country').value, offshore: $('j_off').checked,
+      startDate, durationDays: Number($('j_dur').value),
+      requiredCerts: SB.engine.filterKnownCerts(
+        [...document.querySelectorAll('#reqCerts input[type=checkbox]:checked')].map((c) => c.value),
+        state.settings.certTypes,
+      ),
+    };
+    const teamSize = Number($('j_team').value) || 1;
+    const r = SB.engine.nextPick(job, state.engineers, state.settings);
+    const jobEndISO = SB.dates.formatISO(SB.eligibility.jobEndMs(job));
+
+    const RULE = {
+      'no-competence': 'no matching competence',
+      'no-valid-passport': 'passport invalid within 6 months',
+      'needs-visa': 'no valid visa for destination',
+      'cert-missing-or-expired': 'required certificate missing or expired',
+      'on-vacation': 'on vacation during the job',
+      'double-booked': 'already booked on an overlapping job',
+    };
+
+    let html = '';
+
+    // max-consecutive warning
+    if (job.durationDays > state.settings.maxConsecutiveDays) {
+      html += `<p class="warn">Warning: ${esc(String(job.durationDays))} days exceeds the maximum consecutive offshore days (${esc(String(state.settings.maxConsecutiveDays))}).</p>`;
+    }
+
+    // recommended team (lead + assistants), for any team size >= 2
+    if (teamSize >= 2 && r.shortlist.length >= 1) {
+      const team = r.shortlist.slice(0, teamSize);
+      const assistants = team.slice(1).map((x) => esc(x.name)).join(', ');
+      html += `<p><strong>Recommended team of ${esc(String(teamSize))}:</strong> Lead: ${esc(team[0].name)}${assistants ? ' | Assistants: ' + assistants : ''}</p>`;
+      if (r.shortlist.length < teamSize) {
+        html += `<p class="warn">Only ${esc(String(r.shortlist.length))} eligible engineer${r.shortlist.length === 1 ? '' : 's'} for a team of ${esc(String(teamSize))}.</p>`;
+      }
+    }
+
+    html += '<h3>Shortlist</h3>';
+    if (r.shortlist.length) {
+      html += `<table><thead><tr><th>Rank</th><th>Name</th><th>Level</th><th>Status</th><th>Reason</th><th></th></tr></thead><tbody>`;
+      r.shortlist.forEach((x, i) => {
+        const pill = x.overtime
+          ? '<span class="pill ot">overtime</span>'
+          : '<span class="pill ok">available</span>';
+        html += `<tr><td>${i + 1}</td><td>${esc(x.name)}</td><td>${esc(String(x.level !== undefined ? x.level : ''))}</td><td>${pill}</td><td>${esc(x.reason)}</td><td><button class="assign-btn" data-eng-id="${esc(String(x.id))}">Assign</button></td></tr>`;
+      });
+      html += '</tbody></table>';
+    } else {
+      html += '<p class="muted">No eligible engineers for this job.</p>';
+    }
+
+    const excluded = r.excluded.length
+      ? `<h3>Excluded</h3><table class="excluded"><tbody>` + r.excluded.map((x) => `<tr><td>${esc(x.name)}</td><td>${esc(RULE[x.failedRule] || x.failedRule)}</td></tr>`).join('') + '</tbody></table>'
+      : '';
+
+    $('pickResult').innerHTML = html + excluded;
+
+    // wire Assign buttons
+    $('pickResult').querySelectorAll('.assign-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const engId = btn.dataset.engId;
+        const eng = state.engineers.find((e) => String(e.id) === engId);
+        if (!eng) return;
+        const assignTitle = titleVal || `${equipment}, ${repairType}`;
+        const spec = { title: assignTitle, equipment, repairType, country: job.country, start: job.startDate, end: jobEndISO };
+        const res = SB.jobs.assignToJob(state.jobs, spec, eng.id);
+        state.jobs = res.jobs;
+        SB.jobs.syncAssignments(state.engineers, state.jobs);
+        markDirty();
+        const confirmation = document.createElement('p');
+        confirmation.className = 'ok-note';
+        confirmation.textContent = `Assigned ${eng.name}`;
+        $('pickResult').prepend(confirmation);
+        runPick();
+      });
+    });
+  }
+
+  // ---- Settings tab ----
+  function renderSettings() {
+    const s = state.settings;
+    const el = $('settings');
+    el.innerHTML = '<h2>Settings</h2>';
+
+    // ---- Rotation rules ----
+    const rotSection = document.createElement('div');
+    rotSection.className = 'edit-section';
+    const rotHeading = document.createElement('h3');
+    rotHeading.textContent = 'Rotation rules';
+    rotSection.appendChild(rotHeading);
+
+    function numberSettingRow(labelText, key, min, step) {
+      const row = document.createElement('p');
+      const lbl = document.createElement('label');
+      lbl.textContent = labelText + ' ';
+      const inp = document.createElement('input');
+      inp.type = 'number';
+      inp.value = String(s[key] !== undefined ? s[key] : '');
+      inp.min = String(min);
+      if (step !== undefined) inp.step = String(step);
+      inp.addEventListener('change', () => {
+        const v = parseFloat(inp.value);
+        if (!isNaN(v)) { s[key] = v; markDirty(); }
+      });
+      inp.addEventListener('input', () => {
+        const v = parseFloat(inp.value);
+        if (!isNaN(v)) { s[key] = v; markDirty(); }
+      });
+      lbl.appendChild(inp);
+      row.appendChild(lbl);
+      return row;
+    }
+
+    rotSection.appendChild(numberSettingRow('Rest multiplier', 'restMultiplier', 0, 0.1));
+    rotSection.appendChild(numberSettingRow('Minimum rest days', 'minRestDays', 0, 1));
+    rotSection.appendChild(numberSettingRow('Max consecutive offshore days', 'maxConsecutiveDays', 1, 1));
+    el.appendChild(rotSection);
+
+    // ---- Offshore-required certificates ----
+    const offSection = document.createElement('div');
+    offSection.className = 'edit-section';
+    const offHeading = document.createElement('h3');
+    offHeading.textContent = 'Offshore-required certificates';
+    offSection.appendChild(offHeading);
+
+    const offList = document.createElement('div');
+    offList.className = 'edit-list';
+    (s.offshoreRequiredCerts || []).forEach((cert) => {
+      const row = document.createElement('div');
+      row.className = 'edit-row';
+      const span = document.createElement('span');
+      span.textContent = cert;
+      const rb = document.createElement('button');
+      rb.type = 'button'; rb.textContent = 'Remove'; rb.className = 'btn-remove';
+      rb.addEventListener('click', () => {
+        s.offshoreRequiredCerts = (s.offshoreRequiredCerts || []).filter((x) => x !== cert);
+        markDirty();
+        renderSettings();
+      });
+      row.appendChild(span);
+      row.appendChild(rb);
+      offList.appendChild(row);
+    });
+    offSection.appendChild(offList);
+
+    const addOffRow = document.createElement('div');
+    addOffRow.className = 'edit-row';
+    const offSel = document.createElement('select');
+    (s.certTypes || []).forEach((c) => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      offSel.appendChild(opt);
+    });
+    const addOffBtn = document.createElement('button');
+    addOffBtn.type = 'button'; addOffBtn.textContent = 'Add';
+    addOffBtn.addEventListener('click', () => {
+      const val = offSel.value;
+      if (!val) return;
+      if (!s.offshoreRequiredCerts) s.offshoreRequiredCerts = [];
+      if (s.offshoreRequiredCerts.includes(val)) return;
+      s.offshoreRequiredCerts.push(val);
+      markDirty();
+      renderSettings();
+    });
+    addOffRow.appendChild(offSel);
+    addOffRow.appendChild(addOffBtn);
+    offSection.appendChild(addOffRow);
+    el.appendChild(offSection);
+
+    // ---- Standard editable lists ----
+    const lists = [
+      { key: 'equipment', label: 'Equipment' },
+      { key: 'repairTypes', label: 'Repair types' },
+      { key: 'certTypes', label: 'Certificate types' },
+      { key: 'visaTypes', label: 'Visa types' },
+    ];
+
+    lists.forEach(({ key, label }) => {
+      const section = document.createElement('div');
+      section.className = 'edit-section';
+
+      const heading = document.createElement('h3');
+      heading.textContent = label;
+      section.appendChild(heading);
+
+      const itemsDiv = document.createElement('div');
+      itemsDiv.className = 'edit-list';
+      (s[key] || []).forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'edit-row';
+        const span = document.createElement('span');
+        span.textContent = item;
+        const rb = document.createElement('button');
+        rb.type = 'button'; rb.textContent = 'Remove'; rb.className = 'btn-remove';
+        rb.addEventListener('click', () => {
+          s[key] = s[key].filter((x) => x !== item);
+          markDirty();
+          renderSettings();
+        });
+        row.appendChild(span);
+        row.appendChild(rb);
+        itemsDiv.appendChild(row);
+      });
+      section.appendChild(itemsDiv);
+
+      const addRow = document.createElement('div');
+      addRow.className = 'edit-row';
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.placeholder = 'New item';
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button'; addBtn.textContent = 'Add';
+      addBtn.addEventListener('click', () => {
+        const val = inp.value.trim();
+        if (!val) return;
+        if (!s[key]) s[key] = [];
+        s[key].push(val);
+        markDirty();
+        renderSettings();
+      });
+      addRow.appendChild(inp);
+      addRow.appendChild(addBtn);
+      section.appendChild(addRow);
+
+      el.appendChild(section);
+    });
+  }
+
+  // ---- Schedule tab ----
+  function renderSchedule() {
+    const el = $('schedule');
+    el.innerHTML = '';
+
+    const h2 = document.createElement('h2');
+    h2.textContent = 'Schedule';
+    el.appendChild(h2);
+
+    const jobs = [...state.jobs].sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
+
+    if (jobs.length === 0) {
+      const p = document.createElement('p');
+      p.className = 'muted';
+      p.textContent = 'No jobs yet. Assign engineers from "Find next pick" to create a job.';
+      el.appendChild(p);
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.innerHTML = '<thead><tr><th>Job</th><th>Work</th><th>Country</th><th>From</th><th>To</th><th>Engineers</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    jobs.forEach((job) => {
+      const names = job.engineerIds
+        .map((id) => (state.engineers.find((e) => e.id === id) || {}).name)
+        .filter(Boolean);
+      const work = [job.equipment, job.repairType].filter(Boolean).join(' / ') || '—';
+      const tr = document.createElement('tr');
+
+      const tdJob = document.createElement('td');
+      const link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'link-btn';
+      link.textContent = job.title || '(untitled job)';
+      link.addEventListener('click', () => renderJobDetail(job.id));
+      tdJob.appendChild(link);
+      tr.appendChild(tdJob);
+
+      tr.insertAdjacentHTML('beforeend',
+        `<td>${esc(work)}</td><td>${esc(job.country || '—')}</td>` +
+        `<td>${esc(SB.dates.toDisplay(job.start))}</td><td>${esc(SB.dates.toDisplay(job.end))}</td>` +
+        `<td>${names.length ? esc(names.join(', ')) : '<span class="muted">none</span>'}</td>`);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    el.appendChild(table);
+  }
+
+  function jobDurationDays(job) {
+    return SB.dates.daysBetween(SB.dates.parseISO(job.start), SB.dates.parseISO(job.end)) + 1;
+  }
+
+  // Informational eligibility warning for an engineer against a job (never blocks an add).
+  // The engineer's own assignment to THIS job is ignored so it isn't flagged as a self-clash.
+  function jobConflict(eng, job) {
+    const others = { ...eng, assignments: (eng.assignments || []).filter((a) => a.jobId !== job.id) };
+    const jobObj = {
+      equipment: job.equipment, repairType: job.repairType, country: job.country, offshore: true,
+      startDate: job.start, durationDays: jobDurationDays(job), requiredCerts: [],
+    };
+    const ev = SB.eligibility.evaluate(others, jobObj, state.settings);
+    if (ev.eligible) return '';
+    // Migrated jobs may carry no equipment/repair type; skip the competence check then.
+    if (ev.failedRule === 'no-competence' && !(job.equipment && job.repairType)) return '';
+    const RULE = {
+      'no-competence': 'no matching competence', 'no-valid-passport': 'passport invalid within 6 months',
+      'needs-visa': 'no valid visa for destination', 'cert-missing-or-expired': 'required certificate missing',
+      'on-vacation': 'on vacation during the job', 'double-booked': 'already booked on an overlapping job',
+    };
+    return RULE[ev.failedRule] || ev.failedRule;
+  }
+
+  function renderJobDetail(jobId) {
+    const el = $('schedule');
+    const job = state.jobs.find((j) => j.id === jobId);
+    if (!job) { renderSchedule(); return; }
+    el.innerHTML = '';
+
+    const back = document.createElement('button');
+    back.type = 'button'; back.className = 'secondary'; back.textContent = '← Back to schedule';
+    back.addEventListener('click', renderSchedule);
+    el.appendChild(back);
+
+    const h2 = document.createElement('h2');
+    h2.textContent = job.title || '(untitled job)';
+    el.appendChild(h2);
+
+    const work = [job.equipment, job.repairType].filter(Boolean).join(' / ') || '—';
+    const meta = document.createElement('p');
+    meta.className = 'muted';
+    meta.textContent = `${work} · ${job.country || '—'} · ${SB.dates.toDisplay(job.start)} → ${SB.dates.toDisplay(job.end)}`;
+    el.appendChild(meta);
+
+    // editable job fields
+    const fields = document.createElement('div');
+    fields.className = 'card';
+    fields.innerHTML =
+      `<label>Job title <input type="text" id="jd_title" value="${esc(job.title || '')}"></label>` +
+      `<label>Country <input type="text" id="jd_country" value="${esc(job.country || '')}"></label>` +
+      `<label>Start date <input type="text" id="jd_start" value="${esc(SB.dates.toDisplay(job.start))}" placeholder="dd/mm/yyyy"></label>` +
+      `<label>End date <input type="text" id="jd_end" value="${esc(SB.dates.toDisplay(job.end))}" placeholder="dd/mm/yyyy"></label>`;
+    el.appendChild(fields);
+
+    // assigned engineers
+    const engH = document.createElement('h3');
+    engH.textContent = `Engineers (${job.engineerIds.length})`;
+    el.appendChild(engH);
+
+    const list = document.createElement('div');
+    if (job.engineerIds.length === 0) {
+      list.innerHTML = '<p class="muted">No engineers assigned.</p>';
+    } else {
+      job.engineerIds.forEach((id) => {
+        const eng = state.engineers.find((e) => e.id === id);
+        const conflict = eng ? jobConflict(eng, job) : '';
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `<span>${esc(eng ? eng.name : id)}</span>` +
+          (conflict ? ` <span class="conflict">(${esc(conflict)})</span>` : '');
+        const rm = document.createElement('button');
+        rm.type = 'button'; rm.className = 'btn-remove'; rm.textContent = 'Remove';
+        rm.addEventListener('click', () => {
+          state.jobs = SB.jobs.removeEngineerFromJob(state.jobs, job.id, id);
+          SB.jobs.syncAssignments(state.engineers, state.jobs);
+          markDirty();
+          renderJobDetail(job.id);
+        });
+        row.appendChild(rm);
+        list.appendChild(row);
+      });
+    }
+    el.appendChild(list);
+
+    // add an engineer
+    const available = state.engineers.filter((e) => !job.engineerIds.includes(e.id));
+    if (available.length) {
+      const addRow = document.createElement('div');
+      addRow.className = 'row';
+      const sel = document.createElement('select');
+      sel.id = 'jd_addeng';
+      available.forEach((e) => {
+        const c = jobConflict(e, job);
+        const o = document.createElement('option');
+        o.value = e.id;
+        o.textContent = e.name + (c ? ` — ${c}` : '');
+        sel.appendChild(o);
+      });
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button'; addBtn.textContent = 'Add engineer';
+      addBtn.addEventListener('click', () => {
+        state.jobs = SB.jobs.addEngineerToJob(state.jobs, job.id, sel.value);
+        SB.jobs.syncAssignments(state.engineers, state.jobs);
+        markDirty();
+        renderJobDetail(job.id);
+      });
+      addRow.appendChild(sel);
+      addRow.appendChild(addBtn);
+      el.appendChild(addRow);
+    }
+
+    // notes
+    const notesH = document.createElement('h3');
+    notesH.textContent = 'Notes';
+    el.appendChild(notesH);
+    const n = job.notes || SB.jobs.emptyNotes();
+    const notes = document.createElement('div');
+    notes.className = 'card';
+    notes.innerHTML =
+      `<label>Customer <input type="text" id="jd_customer" value="${esc(n.customer || '')}"></label>` +
+      `<label>Contact person <input type="text" id="jd_contact" value="${esc(n.contact || '')}"></label>` +
+      `<label>Phone <input type="text" id="jd_phone" value="${esc(n.phone || '')}"></label>` +
+      `<label>Email <input type="text" id="jd_email" value="${esc(n.email || '')}"></label>` +
+      `<label>Notes <textarea id="jd_text" rows="4">${esc(n.text || '')}</textarea></label>`;
+    el.appendChild(notes);
+
+    // save / delete
+    const actions = document.createElement('div');
+    actions.className = 'row';
+    const saveJobBtn = document.createElement('button');
+    saveJobBtn.type = 'button'; saveJobBtn.textContent = 'Save job details';
+    saveJobBtn.addEventListener('click', () => {
+      const start = SB.dates.fromDisplay($('jd_start').value);
+      const end = SB.dates.fromDisplay($('jd_end').value);
+      if (!start || !end) { window.alert('Enter valid start and end dates as dd/mm/yyyy.'); return; }
+      if (end < start) { window.alert('End date cannot be before the start date.'); return; }
+      const idx = state.jobs.findIndex((j) => j.id === job.id);
+      if (idx === -1) return;
+      state.jobs[idx] = {
+        ...job,
+        title: $('jd_title').value.trim(),
+        country: $('jd_country').value.trim(),
+        start, end,
+        notes: {
+          customer: $('jd_customer').value.trim(), contact: $('jd_contact').value.trim(),
+          phone: $('jd_phone').value.trim(), email: $('jd_email').value.trim(), text: $('jd_text').value.trim(),
+        },
+      };
+      SB.jobs.syncAssignments(state.engineers, state.jobs);
+      markDirty();
+      renderJobDetail(job.id);
+    });
+    const delJobBtn = document.createElement('button');
+    delJobBtn.type = 'button'; delJobBtn.className = 'btn-remove'; delJobBtn.textContent = 'Delete job';
+    delJobBtn.addEventListener('click', () => {
+      if (!window.confirm('Delete this job and unassign its engineers?')) return;
+      state.jobs = SB.jobs.deleteJob(state.jobs, job.id);
+      SB.jobs.syncAssignments(state.engineers, state.jobs);
+      markDirty();
+      renderSchedule();
+    });
+    actions.appendChild(saveJobBtn);
+    actions.appendChild(delJobBtn);
+    el.appendChild(actions);
+  }
+
+  // ---- Save with password prompt ----
+  function openSavePanel() {
+    let panel = $('savePanel');
+    if (panel) { panel.hidden = false; return; }
+
+    panel = document.createElement('div');
+    panel.id = 'savePanel';
+    panel.className = 'save-panel card';
+
+    const title = document.createElement('p');
+    title.innerHTML = '<strong>Set a password for this file (leave blank for no password)</strong>';
+    panel.appendChild(title);
+
+    const pwInput = document.createElement('input');
+    pwInput.type = 'password'; pwInput.id = 'savePw'; pwInput.autocomplete = 'off';
+    pwInput.value = state.password || '';
+    panel.appendChild(pwInput);
+
+    const meterDiv = document.createElement('div');
+    meterDiv.id = 'saveMeter'; meterDiv.className = 'meter';
+    meterDiv.innerHTML = '<span></span>';
+    panel.appendChild(meterDiv);
+
+    const meterLbl = document.createElement('div');
+    meterLbl.id = 'saveMeterLabel'; meterLbl.className = 'meter-label';
+    panel.appendChild(meterLbl);
+
+    // update meter on input
+    pwInput.addEventListener('input', () => {
+      const s = SB.strength.passwordStrength(pwInput.value);
+      meterDiv.className = 'meter m-' + s;
+      meterDiv.innerHTML = '<span></span>';
+      meterLbl.textContent = 'Password: ' + s.replace('-', ' ');
+    });
+
+    // initialise meter for prefilled value
+    if (state.password) {
+      const s = SB.strength.passwordStrength(state.password);
+      meterDiv.className = 'meter m-' + s;
+      meterDiv.innerHTML = '<span></span>';
+      meterLbl.textContent = 'Password: ' + s.replace('-', ' ');
+    }
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'row';
+
+    const doSaveBtn = document.createElement('button');
+    doSaveBtn.type = 'button'; doSaveBtn.textContent = 'Save file';
+    doSaveBtn.addEventListener('click', async () => {
+      const pw = pwInput.value;
+      const payload = { meta: { appVersion: 2 }, settings: state.settings, engineers: state.engineers, jobs: state.jobs };
+      const env = await SB.crypto.encrypt(payload, pw);
+      const blob = new Blob([JSON.stringify(env)], { type: 'application/json' });
+      const d = new Date();
+      const name = `service-scheduler-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.sbs`;
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+      URL.revokeObjectURL(a.href);
+      state.password = pw;
+      markClean();
+      panel.hidden = true;
+    });
+
+    const cancelSaveBtn = document.createElement('button');
+    cancelSaveBtn.type = 'button'; cancelSaveBtn.textContent = 'Cancel'; cancelSaveBtn.className = 'secondary';
+    cancelSaveBtn.addEventListener('click', () => { panel.hidden = true; });
+
+    btnRow.appendChild(doSaveBtn);
+    btnRow.appendChild(cancelSaveBtn);
+    panel.appendChild(btnRow);
+
+    // insert above the tabs nav
+    const tabs = $('tabs');
+    tabs.parentNode.insertBefore(panel, tabs);
+  }
+
+  $('saveBtn').addEventListener('click', openSavePanel);
+
+  // ---- Quit ----
+  $('quitBtn').addEventListener('click', () => {
+    if (state.dirty) {
+      if (!window.confirm('You have unsaved changes. Quit without saving?')) return;
+    }
+    state.engineers = []; state.settings = null; state.jobs = []; state.password = '';
+    state.dirty = false; $('fileState').textContent = 'No roster loaded';
+    $('tabs').hidden = true;
+    for (const t of ['roster','nextpick','compliance','settings','schedule']) $(t).hidden = true;
+    const panel = $('savePanel');
+    if (panel) panel.hidden = true;
+    // reset lock screen inputs
+    $('fileInput').value = ''; $('pw').value = '';
+    const m = $('meter'); m.className = 'meter'; m.innerHTML = '<span></span>';
+    const ml = $('meterLabel'); if (ml) ml.textContent = '';
+    $('lockError').hidden = true;
+    $('lock').hidden = false;
+  });
+
+  SB.ui = { state, calState, markDirty, markClean, showTab, renderRoster, renderEngineerDetail, renderCompliance, renderNextPick, renderSettings, renderSchedule };
+})();
+
+  </script>
 </body>
 </html>
