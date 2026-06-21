@@ -6,7 +6,7 @@ const read = (p) => readFile(new URL(p, root), 'utf8');
 const order = [
   'src/dates.js', 'src/rest.js', 'src/eligibility.js',
   'src/engine.js', 'src/strength.js', 'src/crypto.js',
-  'src/compliance.js', 'src/demo.js', 'src/countries.js', 'src/ui.js',
+  'src/compliance.js', 'src/demo.js', 'src/countries.js', 'src/jobs.js', 'src/ui.js',
 ];
 
 const css = await read('style.css');

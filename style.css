@@ -11,12 +11,12 @@ h1::before { content:""; display:inline-block; width:.6rem; height:.6rem; border
 .card { max-width:560px; margin:2.5rem auto; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:1.5rem; box-shadow:0 1px 3px rgba(20,30,50,.06); }
 .card h2,.card h3 { margin-top:0; }
 .card > label { display:block; width:100%; margin:.6rem 0 .15rem; font-size:.9rem; color:var(--muted); }
-.card input[type="file"], .card input[type="password"], .card input[type="date"], .card input[type="number"], .card select {
+.card input[type="file"], .card input[type="password"], .card input[type="date"], .card input[type="number"], .card input[type="text"], .card input[type="email"], .card input[type="tel"], .card select, .card textarea {
   display:block; width:100%; margin:.15rem 0 .4rem; padding:.55rem .6rem; background:var(--field); color:var(--ink); border:1px solid var(--line); border-radius:8px; font:inherit;
 }
 label.inline { display:inline-flex; align-items:center; gap:.4rem; width:auto; margin:.25rem 1rem .25rem 0; color:var(--ink); }
 .card input[type="checkbox"] { width:auto; display:inline-block; margin:0; vertical-align:middle; }
-.row { display:flex; gap:.75rem; margin-top:1rem; }
+.row { display:flex; gap:.75rem; margin-top:1rem; align-items:center; flex-wrap:wrap; }
 button { padding:.6rem 1rem; background:var(--accent); color:#fff; border:0; border-radius:8px; cursor:pointer; font:inherit; }
 button.secondary, #newBtn { background:#e9edf2; color:var(--ink); }
 button:hover { filter:brightness(.97); }
@@ -49,6 +49,9 @@ ul { margin:.3rem 0; padding-left:1.2rem; }
 .edit-row span { flex:1; }
 .edit-actions { display:flex; gap:.5rem; margin-top:1rem; }
 .btn-remove { background:#e9edf2; color:var(--ink); padding:.3rem .65rem; font-size:.85rem; }
+.link-btn { background:transparent; color:#2f6fd0; padding:0; font:inherit; text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+.link-btn:hover { color:var(--accent); filter:none; }
+.conflict { color:var(--warn); font-size:.85rem; }
 .roster-header { margin-bottom:.75rem; }
 
 /* =============================================================

@@ -2,7 +2,7 @@
 ;(function () {
   const SB = (globalThis.SB ||= {});
   const $ = (id) => document.getElementById(id);
-  const state = { settings: null, engineers: [], dirty: false, password: '' };
+  const state = { settings: null, engineers: [], jobs: [], dirty: false, password: '' };
 
   const showApp = () => {
     $('lock').hidden = true; $('tabs').hidden = false;
@@ -21,7 +21,10 @@
   });
 
   $('newBtn').addEventListener('click', () => {
-    state.settings = SB.demo.settings(); state.engineers = SB.demo.engineers(); state.password = ''; showApp();
+    state.settings = SB.demo.settings(); state.engineers = SB.demo.engineers(); state.password = '';
+    state.jobs = SB.jobs.fromAssignments(state.engineers);
+    SB.jobs.syncAssignments(state.engineers, state.jobs);
+    showApp();
   });
 
   $('unlockBtn').addEventListener('click', async () => {
@@ -32,7 +35,10 @@
       const env = JSON.parse(await file.text());
       const pw = $('pw').value;
       const payload = await SB.crypto.decrypt(env, pw);
-      state.settings = payload.settings; state.engineers = payload.engineers; state.password = pw; showApp();
+      state.settings = payload.settings; state.engineers = payload.engineers; state.password = pw;
+      state.jobs = payload.jobs || SB.jobs.fromAssignments(state.engineers);
+      SB.jobs.syncAssignments(state.engineers, state.jobs);
+      showApp();
     } catch (e) { showError(e.message); }
   });
   const showError = (msg) => { const el = $('lockError'); el.textContent = msg; el.hidden = false; };
@@ -719,9 +725,11 @@
         const engId = btn.dataset.engId;
         const eng = state.engineers.find((e) => String(e.id) === engId);
         if (!eng) return;
-        if (!eng.assignments) eng.assignments = [];
         const assignTitle = titleVal || `${equipment}, ${repairType}`;
-        eng.assignments.push({ jobTitle: assignTitle, country: job.country, start: job.startDate, end: jobEndISO });
+        const spec = { title: assignTitle, equipment, repairType, country: job.country, start: job.startDate, end: jobEndISO };
+        const res = SB.jobs.assignToJob(state.jobs, spec, eng.id);
+        state.jobs = res.jobs;
+        SB.jobs.syncAssignments(state.engineers, state.jobs);
         markDirty();
         const confirmation = document.createElement('p');
         confirmation.className = 'ok-note';
@@ -890,49 +898,210 @@
     h2.textContent = 'Schedule';
     el.appendChild(h2);
 
-    // gather all assignments across all engineers
-    const rows = [];
-    for (const eng of state.engineers) {
-      for (const a of (eng.assignments || [])) {
-        rows.push({ engineerId: eng.id, engineerName: eng.name, jobTitle: a.jobTitle, country: a.country, start: a.start, end: a.end });
-      }
-    }
-    rows.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
+    const jobs = [...state.jobs].sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
 
-    if (rows.length === 0) {
+    if (jobs.length === 0) {
       const p = document.createElement('p');
       p.className = 'muted';
-      p.textContent = 'No assignments yet.';
+      p.textContent = 'No jobs yet. Assign engineers from "Find next pick" to create a job.';
       el.appendChild(p);
       return;
     }
 
     const table = document.createElement('table');
-    table.innerHTML = '<thead><tr><th>Engineer</th><th>Job</th><th>Country</th><th>From</th><th>To</th><th></th></tr></thead>';
+    table.innerHTML = '<thead><tr><th>Job</th><th>Work</th><th>Country</th><th>From</th><th>To</th><th>Engineers</th></tr></thead>';
     const tbody = document.createElement('tbody');
-    rows.forEach((row) => {
+    jobs.forEach((job) => {
+      const names = job.engineerIds
+        .map((id) => (state.engineers.find((e) => e.id === id) || {}).name)
+        .filter(Boolean);
+      const work = [job.equipment, job.repairType].filter(Boolean).join(' / ') || '—';
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(row.engineerName)}</td><td>${esc(row.jobTitle)}</td><td>${esc(row.country)}</td><td>${esc(SB.dates.toDisplay(row.start))}</td><td>${esc(SB.dates.toDisplay(row.end))}</td>`;
-      const td = document.createElement('td');
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.textContent = 'Remove';
-      removeBtn.className = 'btn-remove';
-      removeBtn.addEventListener('click', () => {
-        const eng = state.engineers.find((e) => e.id === row.engineerId);
-        if (!eng) return;
-        eng.assignments = (eng.assignments || []).filter(
-          (a) => !(a.jobTitle === row.jobTitle && a.country === row.country && a.start === row.start && a.end === row.end)
-        );
-        markDirty();
-        renderSchedule();
-      });
-      td.appendChild(removeBtn);
-      tr.appendChild(td);
+
+      const tdJob = document.createElement('td');
+      const link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'link-btn';
+      link.textContent = job.title || '(untitled job)';
+      link.addEventListener('click', () => renderJobDetail(job.id));
+      tdJob.appendChild(link);
+      tr.appendChild(tdJob);
+
+      tr.insertAdjacentHTML('beforeend',
+        `<td>${esc(work)}</td><td>${esc(job.country || '—')}</td>` +
+        `<td>${esc(SB.dates.toDisplay(job.start))}</td><td>${esc(SB.dates.toDisplay(job.end))}</td>` +
+        `<td>${names.length ? esc(names.join(', ')) : '<span class="muted">none</span>'}</td>`);
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
     el.appendChild(table);
+  }
+
+  function jobDurationDays(job) {
+    return SB.dates.daysBetween(SB.dates.parseISO(job.start), SB.dates.parseISO(job.end)) + 1;
+  }
+
+  // Informational eligibility warning for an engineer against a job (never blocks an add).
+  // The engineer's own assignment to THIS job is ignored so it isn't flagged as a self-clash.
+  function jobConflict(eng, job) {
+    const others = { ...eng, assignments: (eng.assignments || []).filter((a) => a.jobId !== job.id) };
+    const jobObj = {
+      equipment: job.equipment, repairType: job.repairType, country: job.country, offshore: true,
+      startDate: job.start, durationDays: jobDurationDays(job), requiredCerts: [],
+    };
+    const ev = SB.eligibility.evaluate(others, jobObj, state.settings);
+    if (ev.eligible) return '';
+    // Migrated jobs may carry no equipment/repair type; skip the competence check then.
+    if (ev.failedRule === 'no-competence' && !(job.equipment && job.repairType)) return '';
+    const RULE = {
+      'no-competence': 'no matching competence', 'no-valid-passport': 'passport invalid within 6 months',
+      'needs-visa': 'no valid visa for destination', 'cert-missing-or-expired': 'required certificate missing',
+      'on-vacation': 'on vacation during the job', 'double-booked': 'already booked on an overlapping job',
+    };
+    return RULE[ev.failedRule] || ev.failedRule;
+  }
+
+  function renderJobDetail(jobId) {
+    const el = $('schedule');
+    const job = state.jobs.find((j) => j.id === jobId);
+    if (!job) { renderSchedule(); return; }
+    el.innerHTML = '';
+
+    const back = document.createElement('button');
+    back.type = 'button'; back.className = 'secondary'; back.textContent = '← Back to schedule';
+    back.addEventListener('click', renderSchedule);
+    el.appendChild(back);
+
+    const h2 = document.createElement('h2');
+    h2.textContent = job.title || '(untitled job)';
+    el.appendChild(h2);
+
+    const work = [job.equipment, job.repairType].filter(Boolean).join(' / ') || '—';
+    const meta = document.createElement('p');
+    meta.className = 'muted';
+    meta.textContent = `${work} · ${job.country || '—'} · ${SB.dates.toDisplay(job.start)} → ${SB.dates.toDisplay(job.end)}`;
+    el.appendChild(meta);
+
+    // editable job fields
+    const fields = document.createElement('div');
+    fields.className = 'card';
+    fields.innerHTML =
+      `<label>Job title <input type="text" id="jd_title" value="${esc(job.title || '')}"></label>` +
+      `<label>Country <input type="text" id="jd_country" value="${esc(job.country || '')}"></label>` +
+      `<label>Start date <input type="text" id="jd_start" value="${esc(SB.dates.toDisplay(job.start))}" placeholder="dd/mm/yyyy"></label>` +
+      `<label>End date <input type="text" id="jd_end" value="${esc(SB.dates.toDisplay(job.end))}" placeholder="dd/mm/yyyy"></label>`;
+    el.appendChild(fields);
+
+    // assigned engineers
+    const engH = document.createElement('h3');
+    engH.textContent = `Engineers (${job.engineerIds.length})`;
+    el.appendChild(engH);
+
+    const list = document.createElement('div');
+    if (job.engineerIds.length === 0) {
+      list.innerHTML = '<p class="muted">No engineers assigned.</p>';
+    } else {
+      job.engineerIds.forEach((id) => {
+        const eng = state.engineers.find((e) => e.id === id);
+        const conflict = eng ? jobConflict(eng, job) : '';
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `<span>${esc(eng ? eng.name : id)}</span>` +
+          (conflict ? ` <span class="conflict">(${esc(conflict)})</span>` : '');
+        const rm = document.createElement('button');
+        rm.type = 'button'; rm.className = 'btn-remove'; rm.textContent = 'Remove';
+        rm.addEventListener('click', () => {
+          state.jobs = SB.jobs.removeEngineerFromJob(state.jobs, job.id, id);
+          SB.jobs.syncAssignments(state.engineers, state.jobs);
+          markDirty();
+          renderJobDetail(job.id);
+        });
+        row.appendChild(rm);
+        list.appendChild(row);
+      });
+    }
+    el.appendChild(list);
+
+    // add an engineer
+    const available = state.engineers.filter((e) => !job.engineerIds.includes(e.id));
+    if (available.length) {
+      const addRow = document.createElement('div');
+      addRow.className = 'row';
+      const sel = document.createElement('select');
+      sel.id = 'jd_addeng';
+      available.forEach((e) => {
+        const c = jobConflict(e, job);
+        const o = document.createElement('option');
+        o.value = e.id;
+        o.textContent = e.name + (c ? ` — ${c}` : '');
+        sel.appendChild(o);
+      });
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button'; addBtn.textContent = 'Add engineer';
+      addBtn.addEventListener('click', () => {
+        state.jobs = SB.jobs.addEngineerToJob(state.jobs, job.id, sel.value);
+        SB.jobs.syncAssignments(state.engineers, state.jobs);
+        markDirty();
+        renderJobDetail(job.id);
+      });
+      addRow.appendChild(sel);
+      addRow.appendChild(addBtn);
+      el.appendChild(addRow);
+    }
+
+    // notes
+    const notesH = document.createElement('h3');
+    notesH.textContent = 'Notes';
+    el.appendChild(notesH);
+    const n = job.notes || SB.jobs.emptyNotes();
+    const notes = document.createElement('div');
+    notes.className = 'card';
+    notes.innerHTML =
+      `<label>Customer <input type="text" id="jd_customer" value="${esc(n.customer || '')}"></label>` +
+      `<label>Contact person <input type="text" id="jd_contact" value="${esc(n.contact || '')}"></label>` +
+      `<label>Phone <input type="text" id="jd_phone" value="${esc(n.phone || '')}"></label>` +
+      `<label>Email <input type="text" id="jd_email" value="${esc(n.email || '')}"></label>` +
+      `<label>Notes <textarea id="jd_text" rows="4">${esc(n.text || '')}</textarea></label>`;
+    el.appendChild(notes);
+
+    // save / delete
+    const actions = document.createElement('div');
+    actions.className = 'row';
+    const saveJobBtn = document.createElement('button');
+    saveJobBtn.type = 'button'; saveJobBtn.textContent = 'Save job details';
+    saveJobBtn.addEventListener('click', () => {
+      const start = SB.dates.fromDisplay($('jd_start').value);
+      const end = SB.dates.fromDisplay($('jd_end').value);
+      if (!start || !end) { window.alert('Enter valid start and end dates as dd/mm/yyyy.'); return; }
+      if (end < start) { window.alert('End date cannot be before the start date.'); return; }
+      const idx = state.jobs.findIndex((j) => j.id === job.id);
+      if (idx === -1) return;
+      state.jobs[idx] = {
+        ...job,
+        title: $('jd_title').value.trim(),
+        country: $('jd_country').value.trim(),
+        start, end,
+        notes: {
+          customer: $('jd_customer').value.trim(), contact: $('jd_contact').value.trim(),
+          phone: $('jd_phone').value.trim(), email: $('jd_email').value.trim(), text: $('jd_text').value.trim(),
+        },
+      };
+      SB.jobs.syncAssignments(state.engineers, state.jobs);
+      markDirty();
+      renderJobDetail(job.id);
+    });
+    const delJobBtn = document.createElement('button');
+    delJobBtn.type = 'button'; delJobBtn.className = 'btn-remove'; delJobBtn.textContent = 'Delete job';
+    delJobBtn.addEventListener('click', () => {
+      if (!window.confirm('Delete this job and unassign its engineers?')) return;
+      state.jobs = SB.jobs.deleteJob(state.jobs, job.id);
+      SB.jobs.syncAssignments(state.engineers, state.jobs);
+      markDirty();
+      renderSchedule();
+    });
+    actions.appendChild(saveJobBtn);
+    actions.appendChild(delJobBtn);
+    el.appendChild(actions);
   }
 
   // ---- Save with password prompt ----
@@ -985,7 +1154,7 @@
     doSaveBtn.type = 'button'; doSaveBtn.textContent = 'Save file';
     doSaveBtn.addEventListener('click', async () => {
       const pw = pwInput.value;
-      const payload = { meta: { appVersion: 1 }, settings: state.settings, engineers: state.engineers };
+      const payload = { meta: { appVersion: 2 }, settings: state.settings, engineers: state.engineers, jobs: state.jobs };
       const env = await SB.crypto.encrypt(payload, pw);
       const blob = new Blob([JSON.stringify(env)], { type: 'application/json' });
       const d = new Date();
@@ -1017,7 +1186,7 @@
     if (state.dirty) {
       if (!window.confirm('You have unsaved changes. Quit without saving?')) return;
     }
-    state.engineers = []; state.settings = null; state.password = '';
+    state.engineers = []; state.settings = null; state.jobs = []; state.password = '';
     state.dirty = false; $('fileState').textContent = 'No roster loaded';
     $('tabs').hidden = true;
     for (const t of ['roster','nextpick','compliance','settings','schedule']) $(t).hidden = true;

@@ -74,7 +74,7 @@
   };
 
   // Two double-booked engineers: overlapping the default crane job (2026-08-01, 10 days).
-  const doubleBookAssignment = { jobTitle: 'Crane overhaul', country: 'United Kingdom', start: '2026-07-28', end: '2026-08-10' };
+  const doubleBookAssignment = { jobTitle: 'Crane overhaul', equipment: 'offshore crane', repairType: 'overhaul and recertification (including load test)', country: 'United Kingdom', start: '2026-07-28', end: '2026-08-10' };
 
   const engineers = () => ([
     // 1. clean, fully rested, obvious pick
