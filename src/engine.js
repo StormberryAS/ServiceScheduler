@@ -16,6 +16,18 @@
     if (!matches.length) return 0;
     return Math.max(...matches.map((c) => c.level ?? 1));
   };
+  // Keep only values that are real, known certificate types. Guards against non-cert
+  // controls (e.g. the Offshore checkbox, whose browser default value is "on") leaking
+  // into a job's requiredCerts and excluding every engineer. Dedupes, preserves order.
+  const filterKnownCerts = (values, certTypes) => {
+    const known = new Set(certTypes || []);
+    const seen = new Set();
+    const out = [];
+    for (const v of values || []) {
+      if (known.has(v) && !seen.has(v)) { seen.add(v); out.push(v); }
+    }
+    return out;
+  };
   const nextPick = (job, engineers, settings) => {
     const startMs = SB.dates.parseISO(job.startDate);
     const shortlist = [], excluded = [];
@@ -31,5 +43,5 @@
     shortlist.sort((a, b) => b.level - a.level || b.availability - a.availability || a.name.localeCompare(b.name));
     return { shortlist, excluded };
   };
-  SB.engine = { nextPick };
+  SB.engine = { nextPick, filterKnownCerts };
 })();

@@ -4,7 +4,7 @@ import '../src/dates.js';
 import '../src/rest.js';
 import '../src/eligibility.js';
 import '../src/engine.js';
-const { nextPick } = globalThis.SB.engine;
+const { nextPick, filterKnownCerts } = globalThis.SB.engine;
 
 const settings = { passportInvalidMonths:6, passportBufferMonths:12 };
 const job = { equipment:'winch system', repairType:'corrective (breakdown) repair', country:'Norway',
@@ -30,6 +30,20 @@ test('rested engineers rank above resting ones, exclusions captured, level prese
   assert.deepEqual(r.excluded, [{ id:'noskill', name:'noskill', failedRule:'no-competence' }]);
   // level field must be present on every shortlist row.
   assert.ok(r.shortlist.every((x) => typeof x.level === 'number'));
+});
+test('filterKnownCerts drops the phantom Offshore "on" value and unknown certs, dedupes', () => {
+  const certTypes = ['offshore safety course', 'offshore medical certificate', 'BOSIET (OPITO)'];
+  // The next-pick form collects checkbox values; the Offshore checkbox has no value attribute,
+  // so the browser reports "on". It must not become a required certificate.
+  assert.deepEqual(
+    filterKnownCerts(['on', 'offshore safety course'], certTypes),
+    ['offshore safety course'],
+  );
+  // No certificates ticked -> empty required list (so the job filters on nothing).
+  assert.deepEqual(filterKnownCerts(['on'], certTypes), []);
+  assert.deepEqual(filterKnownCerts([], certTypes), []);
+  // Duplicates collapse to one.
+  assert.deepEqual(filterKnownCerts(['BOSIET (OPITO)', 'BOSIET (OPITO)'], certTypes), ['BOSIET (OPITO)']);
 });
 test('higher competence level ranks first even when the other engineer is more available', () => {
   // 'junior' has no offshore history (availability 999) but level 1.

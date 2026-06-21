@@ -641,7 +641,7 @@
         <label>Start date <input type="text" id="j_start" placeholder="dd/mm/yyyy" value="01/08/2026"></label>
         <label>Duration (days) <input type="number" id="j_dur" value="10" min="1"></label>
         <label>Team size <input type="number" id="j_team" value="1" min="1" step="1"></label>
-        <div>Required certificates:<br>${certChecks}</div>
+        <div id="reqCerts">Required certificates:<br>${certChecks}</div>
         <button id="runPick">Find engineers</button>
       </div>
       <div id="pickResult"></div>`;
@@ -658,7 +658,10 @@
       equipment, repairType,
       country: $('j_country').value, offshore: $('j_off').checked,
       startDate, durationDays: Number($('j_dur').value),
-      requiredCerts: [...document.querySelectorAll('#nextpick input[type=checkbox]:checked')].filter((c) => c.value).map((c) => c.value),
+      requiredCerts: SB.engine.filterKnownCerts(
+        [...document.querySelectorAll('#reqCerts input[type=checkbox]:checked')].map((c) => c.value),
+        state.settings.certTypes,
+      ),
     };
     const teamSize = Number($('j_team').value) || 1;
     const r = SB.engine.nextPick(job, state.engineers, state.settings);
