@@ -848,7 +848,7 @@ ul { margin:.3rem 0; padding-left:1.2rem; }
     'working at height',
     'first aid',
   ];
-  const COUNTRIES = ['Norway','United Kingdom','Netherlands','Brazil','United Arab Emirates','Angola','Australia','Syria'];
+  const COUNTRIES = ['Norway','United Kingdom','Netherlands','Brazil','United Arab Emirates','Angola','Australia','Syria','Poland','Philippines','India'];
   const VISATYPES = ['Temporary work permit','Business visitor','Residence permit'];
   const settings = () => ({
     restRule: 'equal-to-previous-trip',
@@ -998,6 +998,27 @@ ul { margin:.3rem 0; padding-left:1.2rem; }
     { id:'e15', name:'Mia Johansen', nationalities:['Norway'], passports:[{country:'Norway',number:'NO15000',expiry:'2030-12-01'}],
       visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2027-11-01'}], certs:baseCerts('2027-09-01'),
       competence:[comp('offshore crane','preventive (scheduled) service',1), comp('lifeboat/davit system','corrective (breakdown) repair',2)],
+      availability:{ lastOffshore:null, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    // 16. still resting at the job start -> overtime flag in the shortlist (eligible, NOT double-booked): the rest-cost demo case
+    { id:'e16', name:'Magdalena Kowalska', nationalities:['Poland'],
+      passports:[{country:'Poland',number:'PL16000',expiry:'2030-05-01'}],
+      visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2027-06-20'}],
+      certs:baseCerts('2028-04-01'), competence:[comp('winch system','overhaul and recertification (including load test)',3)],
+      availability:{ lastOffshore:{ end:'2026-07-18', durationDays:21 }, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    // 17. available, foreign; Norway permit renews mid-2027 (compliance-calendar variety)
+    { id:'e17', name:'Carlos Mendoza', nationalities:['Philippines'],
+      passports:[{country:'Philippines',number:'PH17000',expiry:'2029-08-01'}],
+      visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2028-03-01'},{country:'Norway',type:'Residence permit',expiry:'2027-07-15'}],
+      certs:baseCerts('2028-06-01'), competence:[comp('hydraulic power unit (HPU) / control system','corrective (breakdown) repair',3)],
+      availability:{ lastOffshore:{ end:'2026-05-10', durationDays:12 }, restDaysOverride:null, vacations:[] },
+      assignments: [] },
+    // 18. available now, foreign; UK permit renews mid-2027 (compliance-calendar variety)
+    { id:'e18', name:'Priya Sharma', nationalities:['India'],
+      passports:[{country:'India',number:'IN18000',expiry:'2030-02-01'}],
+      visas:[{country:'United Kingdom',type:'Temporary work permit',expiry:'2027-06-25'}],
+      certs:baseCerts('2028-09-01'), competence:[comp('Launch and Recovery System (LARS)','corrective (breakdown) repair',3)],
       availability:{ lastOffshore:null, restDaysOverride:null, vacations:[] },
       assignments: [] },
   ].map((e) => ({ ...e, competence: broadComp(e.competence), visas: dedupeVisas(e.visas), certs: ensureOffshoreCerts(e.certs) })));

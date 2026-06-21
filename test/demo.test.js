@@ -7,9 +7,9 @@ import '../src/engine.js';
 import '../src/demo.js';
 const { settings, engineers } = globalThis.SB.demo;
 
-test('exactly 15 synthetic engineers with required edge cases', () => {
+test('exactly 18 synthetic engineers with required edge cases', () => {
   const es = engineers();
-  assert.equal(es.length, 15);
+  assert.equal(es.length, 18);
   // a dual-national exists
   assert.ok(es.some((e) => e.nationalities.length >= 2));
   // someone holds more than one passport
