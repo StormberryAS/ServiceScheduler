@@ -39,3 +39,13 @@ For local development, open `index.html` (it loads the `src/` files directly).
 ## Licence
 
 Part of the Stormberry ecosystem.
+
+## Disclaimer
+
+Supplied free of charge, **as is**, with no warranty of any kind. Using it creates no client or advisory relationship with Stormberry AS, and nothing it produces is professional advice.
+
+**Not for offshore or safety-critical rostering.** This is a planning aid. It does not enforce working-time rules, rest requirements, competency currency or any regulatory duty, and it must not be the system of record for crew safety or compliance.
+
+This is a **functioning prototype**, not a certified instrument and not a professional service. Values are computed or modelled, not measured. Check anything that matters against an authoritative source before you act on it. Stormberry AS reimburses no cost or loss arising from use of this application.
+
+Full terms: [DISCLAIMER.md](DISCLAIMER.md).
