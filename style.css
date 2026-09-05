@@ -290,7 +290,7 @@ ul { margin:.3rem 0; padding-left:1.2rem; }
 .footer-bottom p { margin: 0; }
 
 .footer-bottom a {
-  color: var(--chrome-text-secondary);
+  color: var(--chrome-accent-blue);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
