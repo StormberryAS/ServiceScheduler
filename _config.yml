@@ -1,0 +1,29 @@
+# GitHub Pages serves scheduler.stormberry.as from this repository root.
+#
+# Everything listed below is source, tooling or internal documentation that must never be
+# published. Without this file Pages serves the whole repository, and it was doing exactly
+# that: on 2026-09-05 index.dev.html, README.md, DISCLAIMER.md and package.json all returned
+# 200 from the live site.
+#
+# index.dev.html is the reason this file exists. It is the 146-line development harness that
+# loads src/ as modules, next to the 2,392-line production page that inlines everything. It
+# is a real working file, so it stays in the repository; it simply must not be served.
+#
+# Jekyll's `exclude` REPLACES its defaults rather than adding to them, which is why
+# node_modules is listed here even though .gitignore already keeps it out of the repository.
+#
+# disclaimer.html is deliberately NOT excluded: it is the published disclaimer the footer
+# links to. Only the Markdown source of it is withheld. Same rule as SunApp and MoonApp.
+exclude:
+  - index.dev.html
+  - src/
+  - test/
+  - docs/
+  - build.mjs
+  - bump_assets.py
+  - package.json
+  - package-lock.json
+  - README.md
+  - DISCLAIMER.md
+  - node_modules/
+  - dist/
