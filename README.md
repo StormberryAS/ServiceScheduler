@@ -40,6 +40,8 @@ For local development, open `index.html` (it loads the `src/` files directly).
 
 Part of the Stormberry ecosystem.
 
+The Inter typeface in `fonts/inter/` is by Rasmus Andersson ([rsms.me/inter](https://rsms.me/inter/)), Copyright (c) 2016 The Inter Project Authors, licensed under the [SIL Open Font License 1.1](https://openfontlicense.org/). It is self-hosted, so the page loads no font from any third party.
+
 ## Disclaimer
 
 Supplied free of charge, **as is**, with no warranty of any kind. Using it creates no client or advisory relationship with Stormberry AS, and nothing it produces is professional advice.

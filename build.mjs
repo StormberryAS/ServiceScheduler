@@ -1,5 +1,5 @@
 // build.mjs
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, cp } from 'node:fs/promises';
 const root = new URL('./', import.meta.url);
 const read = (p) => readFile(new URL(p, root), 'utf8');
 
@@ -13,7 +13,7 @@ const css = await read('style.css');
 let scripts = '';
 for (const f of order) scripts += `\n/* ${f} */\n` + await read(f);
 
-const csp = "default-src 'self'; connect-src 'none'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'";
+const csp = "default-src 'self'; connect-src 'none'; img-src 'self' data: https:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'";
 let html = await read('index.dev.html');
 // strip the dev entry's own CSP meta first, so the inlined build carries exactly one
 // (the dev meta forbids inline code, which would otherwise block the inlined script/style)
@@ -34,7 +34,8 @@ const siblingFavicons = {
 };
 for (const [url, path] of Object.entries(siblingFavicons)) html = html.replaceAll(url, dataURI(await readFile(new URL(path, root))));
 // remove external link + script tags, inject inline style + one inline script + CSP meta
-html = html.replace('<link rel="stylesheet" href="style.css">',
+// bump_assets.py stamps ?v=<hash> onto the link, so match it with or without the stamp
+html = html.replace(/<link rel="stylesheet" href="style\.css(?:\?v=[^"]*)?">/,
   `<meta http-equiv="Content-Security-Policy" content="${csp}">\n  <style>\n${css}\n  </style>`);
 html = html.replace(/\n\s*<script src="[^"]+"><\/script>/g, '');
 html = html.replace('</body>', `  <script>\n${scripts}\n  </script>\n</body>`);
@@ -43,6 +44,8 @@ await mkdir(new URL('dist/', root), { recursive: true });
 await writeFile(new URL('dist/index.html', root), html);
 await writeFile(new URL('dist/_headers', root), await read('_headers'));
 await writeFile(new URL('dist/favicon.svg', root), await read('favicon.svg'));
+// the self-hosted Inter typeface is the one stylesheet the page still links (font files cannot be inlined sensibly)
+await cp(new URL('fonts/inter/', root), new URL('dist/fonts/inter/', root), { recursive: true });
 // GitHub Pages serves the repo root; the served index.html IS the self-contained build,
 // so the live site is one auditable file with no external code requests.
 await writeFile(new URL('index.html', root), html);
@@ -50,6 +53,8 @@ await writeFile(new URL('index.html', root), html);
 // guard: code must be inlined (no external <script src> or stylesheet <link>). External
 // images and anchor links are allowed (e.g. the Stormberry app-switcher carousel and footer links).
 if (/<script\b[^>]*\bsrc=/i.test(html)) throw new Error('external <script src> left in dist');
-if (/<link\b[^>]*rel=["']?stylesheet/i.test(html)) throw new Error('external stylesheet link left in dist');
+// The only stylesheet link allowed is the self-hosted Inter @font-face file (same origin, font-src 'self').
+const strayCss = html.replace(/<link rel="stylesheet" href="fonts\/inter\/inter\.css(?:\?v=[^"]*)?">/g, '');
+if (/<link\b[^>]*rel=["']?stylesheet/i.test(strayCss)) throw new Error('external stylesheet link left in dist');
 if (/\bsrc=["']https?:/i.test(html)) throw new Error('external subresource src left in dist (favicon not inlined?)');
 console.log('dist/index.html written, bytes:', html.length);
