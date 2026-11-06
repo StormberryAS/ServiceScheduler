@@ -14,6 +14,12 @@
 #
 # disclaimer.html is deliberately NOT excluded: it is the published disclaimer the footer
 # links to. Only the Markdown source of it is withheld. Same rule as SunApp and MoonApp.
+#
+# GitHub Pages builds with its default theme (jekyll-theme-primer) unless this file names
+# none, and that theme adds /assets/css/style.css: a stylesheet no page links, in fonts that
+# are not Inter. theme: null turns the theme off (6 November 2026). Tested with the Pages
+# build image (github-pages 232): the only change to the site is that this file is gone.
+theme: null
 exclude:
   - index.dev.html
   - src/
