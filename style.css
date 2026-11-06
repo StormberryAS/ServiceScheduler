@@ -18,6 +18,11 @@ label.inline { display:inline-flex; align-items:center; gap:.4rem; width:auto; m
 .card input[type="checkbox"] { width:auto; display:inline-block; margin:0; vertical-align:middle; }
 .row { display:flex; gap:.75rem; margin-top:1rem; align-items:center; flex-wrap:wrap; }
 button { padding:.6rem 1rem; background:var(--accent); color:#fff; border:0; border-radius:8px; cursor:pointer; font:inherit; }
+/* Form controls take the page font. Without this, an input or select outside a .card (the rotation inputs and the
+   certificate select in Settings, the engineer select in the job detail) and the "Choose File" button of the file
+   input on the lock screen are drawn in the browser's own font (Arial). Family only: the size stays. */
+input, select, textarea { font-family: inherit; }
+::file-selector-button { font-family: inherit; }
 button.secondary, #newBtn { background:#e9edf2; color:var(--ink); }
 button:hover { filter:brightness(.97); }
 nav { display:flex; gap:.5rem; padding:.6rem 1.5rem; background:var(--panel); border-bottom:1px solid var(--line); align-items:center; position:sticky; top:0; }
